@@ -1,5 +1,10 @@
 import re
 
+TYPES = set('int')
+def is_type(token: str) -> bool:
+    """Returns whether the token is a CPP type used in the engine."""
+    return token in TYPES
+
 def fetch_tokens(content: str) -> list:
     """Fetches all the tokens from the source code. A token is a word, number, whitespace, symbol, etc."""
     return [t for t in re.split('([^\w])', content) if t]
@@ -27,10 +32,34 @@ assert not is_name(' ')
 assert not is_name('\n')
 
 
-def group_tokens(tokens: list, start: list, end: list) -> list:
-    """Finds ``start`` tokens and concatenates tokens until ``end`` tokens is found, including the ``end`` tokens."""
+def attach_eligble(token: str) -> bool:
+    """Returns whether a token is eligble to be attached together to save whitespace."""
+    return token and not (is_name(token) or token.isnumeric())
+
+assert attach_eligble(')')
+assert attach_eligble('+')
+assert attach_eligble('{')
+assert not attach_eligble('a_name')
+assert not attach_eligble('1')
+assert not attach_eligble('main')
+
+
+def attachble_tokens(first: str, second: str) -> bool:
+    """Returns whether two tokens can be attached together to save whitespace."""
+    return attach_eligble(first) or attach_eligble(second)
+
+assert attachble_tokens('1', '+')
+assert attachble_tokens('{', '}')
+assert attachble_tokens('(', ')')
+assert not attachble_tokens('int', 'main')
+assert not attachble_tokens('1', '2')
+assert not attachble_tokens('return', '0')
+
+
+# def group_tokens(tokens: list, start: list, end: list) -> list:
+#     """Finds ``start`` tokens and concatenates tokens until ``end`` tokens is found, including the ``end`` tokens."""
     
-    
+
 
 
 if __name__ == '__main__':
