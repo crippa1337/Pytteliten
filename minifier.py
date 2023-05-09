@@ -20,13 +20,14 @@ assert is_name('a_1')
 assert is_name('__AA')
 assert is_name('variable')
 assert is_name('my_favorite_number_100000')
+assert is_name('int')
 assert not is_name('123')
 assert not is_name('1a2b3c')
 assert not is_name('')
 assert not is_name(' ')
 assert not is_name('\n')
 
-TYPES = set('int')
+TYPES = set(['int'])
 def is_type(token: str) -> bool:
     """Returns whether the token is a CPP type used in the engine."""
     return token in TYPES
