@@ -60,16 +60,35 @@ assert not attachble_tokens('return', '0')
 #     """Finds ``start`` tokens and concatenates tokens until ``end`` tokens is found, including the ``end`` tokens."""
     
 
+def write_minification(includes: list, content: str) -> str:
+    """Prints the minified code."""
+    minified = ''
+    
+    for include in includes:
+        minified += include + '\n'
+    
+    minified += content
+    
+    with open('minified.cpp', 'w') as f:
+        f.write(minified)
 
+
+def minify(content: str):
+    # Step 1. Remove includes and save them in a list for later use
+    INCLUDES = []
+    for line in content.split('\n'):
+        if line.startswith('#include'):
+            content = content.replace(line, '')
+            INCLUDES.append(line)
+    
+    # Step 2. Remove newlines to make the content one line
+    content = content.replace('\n', '')
+    
+    write_minification(INCLUDES, content)
+    
 
 if __name__ == '__main__':
     with open('main.cpp', 'r') as f:
-        content = f.read()
+        src = f.read()
         
-        print(content)
-        # TODO: Add includes to the top of the file
-        
-        # Remove newlines so that the content is one line
-        content = content.replace('\n', '')
-        print(content)
-        
+        minify(src)
