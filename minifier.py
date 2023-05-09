@@ -1,10 +1,5 @@
 import re
 
-TYPES = set('int')
-def is_type(token: str) -> bool:
-    """Returns whether the token is a CPP type used in the engine."""
-    return token in TYPES
-
 def fetch_tokens(content: str) -> list:
     """Fetches all the tokens from the source code. A token is a word, number, whitespace, symbol, etc."""
     return [t for t in re.split('([^\w])', content) if t]
@@ -30,6 +25,21 @@ assert not is_name('1a2b3c')
 assert not is_name('')
 assert not is_name(' ')
 assert not is_name('\n')
+
+TYPES = set('int')
+def is_type(token: str) -> bool:
+    """Returns whether the token is a CPP type used in the engine."""
+    return token in TYPES
+
+
+def renameable(token: str) -> bool:
+    """Returns whether the token is renameable, i.e names that aren't types."""
+    return not is_type(token) and is_name(token)
+
+assert renameable('abcdefg')
+assert renameable('main')
+assert not renameable('int')
+assert not renameable('1000')
 
 
 def attach_eligble(token: str) -> bool:
@@ -58,7 +68,19 @@ assert not attachble_tokens('return', '0')
 
 # def group_tokens(tokens: list, start: list, end: list) -> list:
 #     """Finds ``start`` tokens and concatenates tokens until ``end`` tokens is found, including the ``end`` tokens."""
-    
+
+
+def find_directives(content: str) -> list:
+    directives = []
+    for line in content.split('\n'):
+        if line.startswith('#'):
+            directives.append(line)
+            content = content.replace(line, '')
+            
+    return directives
+
+assert find_directives('#include <iostream>\n#define X 80\nint main() { return 0; }') == ['#include <iostream>', '#define X 80']
+
 
 def write_minification(directives: list, content: str) -> str:
     """Writes the minified code."""
@@ -75,11 +97,7 @@ def write_minification(directives: list, content: str) -> str:
 
 def minify(content: str):
     # Step 1. Remove any preprocessor directives and save them in a list for later use
-    directives = []
-    for line in content.split('\n'):
-        if line.startswith('#'):
-            content = content.replace(line, '')
-            directives.append(line)
+    directives = find_directives(content)
     
     # Step 2. Remove newlines to make the content one line
     content = content.replace('\n', '')
