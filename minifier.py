@@ -1,4 +1,5 @@
 import re
+import sys
 
 
 TYPES = set(['int', 'u64'])
@@ -211,7 +212,8 @@ def minify(content: str):
         if token.isspace():
             continue
 
-        # Step 6. Add a seperator between tokens that can't be attached to each other
+        # Step 7. Add a seperator between tokens that can't be attached to each other.
+        # For example: Two names (int main)
         if prev and not attachble_tokens(prev, token):
             new_tokens.append(' ')
 
@@ -229,3 +231,9 @@ if __name__ == '__main__':
         src = f.read()
 
         minify(src)
+
+        if sys.argv[1] == 'size':
+            mini = open('minified.cpp', 'r').read()
+
+            print('Original size:', len(src))
+            print('Minified size:', len(mini))
