@@ -81,8 +81,45 @@ assert not attachble_tokens('1', '2')
 assert not attachble_tokens('return', '0')
 
 
-def group_tokens(tokens: list, start: list, end: list) -> list:
-    """Finds ``start`` tokens and concatenates tokens until ``end`` tokens is found, including the ``end`` tokens."""
+def group_tokens(token_list: list, start: list, end: list, include_end: bool = True) -> list:
+    """Finds ``start`` tokens and concatenates everything from ``start``-``end``."""
+    output = []
+
+    # This is the start index where we look for first index such that [idx + len(start)] <=> start
+    start_idx = 0
+
+    while start_idx < len(token_list):
+
+        # end must be after the start, so set it to start + 1
+        end_idx = start_idx + 1
+
+        # Verify that there is still space in the token list in the first condition.
+        # In the second condition, check that start that was passed in ==
+        # token_list starting at start_idx till start_idx + len(start).
+        # Recollect that start_idx is just an idx, and start_idx + len(start) is a
+        # subsequence of token_list of size len(start)
+        if (start_idx + len(start) <= len(token_list)) and (start == token_list[start_idx:start_idx + len(start)]):
+
+            # Search all possible end idxs from the end of the start to the end of the string.
+            # Give padding for the size of the end token.
+            for possible_end_idx in range(end_idx + len(start) - 1, len(token_list) - len(end) + 1):
+
+                # Similar to the first condition, check if from end idx to len(end) == passed in end.
+                if end == token_list[possible_end_idx: possible_end_idx + len(end)]:
+                    # Just include the whole end if that param is true.
+                    end_idx = possible_end_idx + \
+                        len(end) if include_end else possible_end_idx
+                    break
+
+        # Self-explanatory, join everything from start to end. If we never found anything this is
+        # start:start+1 because we set end_idx to start + 1 at the beginning.
+        # This adds just the token if we found nothing.
+        output.append("".join(token_list[start_idx:end_idx]))
+
+        # We searched everything from start to end, so no need to research. set start to old end.
+        start_idx = end_idx
+
+    return output
 
 
 assert group_tokens(["a", "b", "c", "d"], ["a"], ["b"]) == ["ab", "c", "d"]
