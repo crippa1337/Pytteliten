@@ -126,17 +126,38 @@ assert group_tokens(["a", "b", "c", "d"], ["a"], ["b"]) == ["ab", "c", "d"]
 assert group_tokens(["a", "b", "c", "d"], ["b"], ["c"]) == ["a", "bc", "d"]
 assert group_tokens(["a", "b", "c", "d"], ["c"], ["d"]) == ["a", "b", "cd"]
 assert group_tokens(["a", "b", "c", "d"], ["a"], ["d"]) == ["abcd"]
+assert group_tokens(["a", "b", "c", "d"], ["c"], [
+    "b"]) == ["a", "b", "c", "d"]
+assert group_tokens(["a", "b", "c", "d"], ["b"], [
+    "e"]) == ["a", "b", "c", "d"]
+assert group_tokens(["a", "b", "c", "d"], ["b"], [
+    "b"]) == ["a", "b", "c", "d"]
+assert group_tokens(["a", "b", "c", "d"], ["a", "b"], ["c"]) == ["abc", "d"]
 assert group_tokens(["a", "b", "c", "d"], ["a"], ["b", "c"]) == ["abc", "d"]
 assert group_tokens(["a", "b", "c", "d"], ["a", "b", "c"], ["d"]) == ["abcd"]
+assert group_tokens(["a", "b", "c", "d"], ["a"], ["c"], True) == ["abc", "d"]
+assert group_tokens(["a", "b", "c", "d"], ["a"], [
+    "c"], False) == ["ab", "c", "d"]
+assert group_tokens(["a", "b", "c", "d"], ["c"], [
+    "e"]) == ["a", "b", "c", "d"]
+assert group_tokens(["a", "b", "c", "d"], ["e"], [
+    "c"]) == ["a", "b", "c", "d"]
 
 
 def find_directives(content: str) -> list:
     directives = []
+
+    # Split by newlines, this will make each element
+    # a possible directive.
     for line in content.split('\n'):
+        # ... is it a directive?
         if line.startswith('#'):
+            # ... if so, add it to the list of directives
             directives.append(line)
+            # ... and remove it from the content
             content = content.replace(line, '')
 
+    # Returning the directives for themselves and the now 'cleaned' content.
     return directives, content
 
 
@@ -144,9 +165,14 @@ def write_minification(directives: list, content: str) -> str:
     """Writes the minified code."""
     minified = ''
 
+    # We've gotten all the directives, so we write them
+    # to the top of the file first.
     for d in directives:
+        # Remove unnecessary whitespace
+        d = d.replace(' ', '')
         minified += d + '\n'
 
+    # ... add on the rest of the content as a single line afterwards.
     minified += content
 
     with open('minified.cpp', 'w') as f:
@@ -157,32 +183,45 @@ def minify(content: str):
     # Step 1. Remove any preprocessor directives and save them in a list for later use
     directives, content = find_directives(content)
 
-    # Step 2. Remove newlines to make the content one line
-    content = content.replace('\n', '')
-
-    # Step 3. Fetch all the tokens
+    # Step 2. Fetch all the tokens
     tokens = fetch_tokens(content)
 
-    prev = None
+    # Step 3. Create token groups such as comments, strings, etc.
+    tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
+    tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
+    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
+
     new_tokens = []
+    prev = None
 
     for token in tokens:
-        is_whitespace = token.isspace()
+        # Step 4. Remove any of the following:
+        # Line comment
+        if token.startswith('//'):
+            continue
+        # Block comment
+        elif token.startswith('/*'):
+            continue
 
-        # Step 4. Remove whitespaces between brackets, semicolons and parentheses
-        # if is_whitespace and prev in ['{', ')', ';']:
-        #     continue
+        # Step 5. Remove newlines
+        if token == '\n':
+            continue
 
-        # Step 5. Attach tokens together to save whitespace
-        if prev and attachble_tokens(prev, token):
-            content = content.replace(prev + ' ' + token, prev + token)
+        # Step 6. Remove alone whitespace
+        if token.isspace():
+            continue
 
-        new_tokens.append(token)
+        # Step 6. Add a seperator between tokens that can't be attached to each other
+        if prev and not attachble_tokens(prev, token):
+            new_tokens.append(' ')
+
         prev = token
+        new_tokens.append(token)
 
-    content = ''.join(new_tokens)
+    print(new_tokens)
+    tokens = ''.join(new_tokens)
 
-    write_minification(directives, content)
+    write_minification(directives, tokens)
 
 
 if __name__ == '__main__':
