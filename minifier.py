@@ -1,8 +1,43 @@
 import re
 import sys
 
+#################
+# Name mangling #
+#################
 
-TYPES = set(['int', 'u64'])
+# KEY: TOKEN
+# VALUE: MANGLED NAME
+# counter = 65
+# resets = 0
+names = dict()
+KEYWORDS = ['int', 'return', 'printf']
+global counter, resets
+counter = 65  # ASCII A
+resets = 0  # Number of times the counter has exceeded 90 (Z)
+
+
+def generate_name(token: str) -> str:
+    """Generates a new name for a token. If the token has already been before, return that name to keep coherency."""
+    global counter, resets
+
+    # Already mangled
+    if token in names:
+        return names[token]
+
+    # If we're on our first reset, we can jump to lowercase letters
+    if resets == 0 and counter == 90:
+        counter = 96  # the char before ASCII a, because we increment before returning
+
+    # Generate a new name
+    names[token] = chr(counter) * (resets + 1)
+
+    # Increment counter so that the next name is different
+    counter += 1
+    if (counter > 90 and resets != 0) or counter > 122:  # ASCII Z or z
+        counter = 65
+        resets += 1
+
+    return names[token]
 
 
 def fetch_tokens(content: str) -> list:
@@ -37,20 +72,19 @@ assert not is_name(' ')
 assert not is_name('\n')
 
 
-def is_type(token: str) -> bool:
-    """Returns whether the token is a CPP type used in the engine."""
-    return token in TYPES
+def is_keyword(token: str) -> bool:
+    """Returns whether the token is a CPP keyword used in the engine."""
+    return token in KEYWORDS
 
 
 def renameable(token: str) -> bool:
     """Returns whether the token is renameable, i.e names that aren't types."""
-    return not is_type(token) and is_name(token)
+    return not is_keyword(token) and is_name(token)
 
 
 assert renameable('abcdefg')
 assert renameable('main')
 assert not renameable('int')
-assert not renameable('u64')
 assert not renameable('1000')
 
 
@@ -176,7 +210,7 @@ def write_minification(directives: list, content: str) -> str:
     # ... add on the rest of the content as a single line afterwards.
     minified += content
 
-    with open('minified.cpp', 'w') as f:
+    with open('pytteliten.cpp', 'w') as f:
         f.write(minified)
 
 
@@ -194,6 +228,9 @@ def minify(content: str):
 
     new_tokens = []
     prev = None
+
+    for kw in KEYWORDS:
+        names[kw] = kw
 
     for token in tokens:
         # Step 4. Remove any of the following:
@@ -217,13 +254,16 @@ def minify(content: str):
         if prev and not attachble_tokens(prev, token):
             new_tokens.append(' ')
 
+        # Step 8. If the token is a name, but not a type, we mangle it.
+        if is_name(token) and not is_keyword(token):
+            token = generate_name(token)
+
         prev = token
         new_tokens.append(token)
 
-    print(new_tokens)
-    tokens = ''.join(new_tokens)
+    print(names)
 
-    write_minification(directives, tokens)
+    write_minification(directives, ''.join(new_tokens))
 
 
 if __name__ == '__main__':
@@ -231,9 +271,3 @@ if __name__ == '__main__':
         src = f.read()
 
         minify(src)
-
-        if sys.argv[1] == 'size':
-            mini = open('minified.cpp', 'r').read()
-
-            print('Original size:', len(src))
-            print('Minified size:', len(mini))
