@@ -10,7 +10,7 @@ names = dict()
 KEYWORDS = ['int', 'return', 'printf']
 global counter, resets
 counter = 65  # ASCII A
-resets = 0  # Number of times the counter has exceeded 90 (Z)
+resets = 0  # Number of times the counter has exceeded reset back to A
 
 
 def generate_name(token: str) -> str:
