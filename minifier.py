@@ -258,8 +258,6 @@ def minify(content: str):
         prev = token
         new_tokens.append(token)
 
-    print(names)
-
     write_minification(directives, ''.join(new_tokens))
 
 
