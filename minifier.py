@@ -7,8 +7,6 @@ import sys
 
 # KEY: TOKEN
 # VALUE: MANGLED NAME
-# counter = 65
-# resets = 0
 names = dict()
 KEYWORDS = ['int', 'return', 'printf']
 global counter, resets
