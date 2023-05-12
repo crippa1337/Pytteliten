@@ -22,16 +22,16 @@ def generate_name(token: str) -> str:
     if token in names:
         return names[token]
 
-    # If we're on our first reset, we can jump to lowercase letters
-    if resets == 0 and counter == 90:
-        counter = 96  # the char before ASCII a, because we increment before returning
+    # Jump to lowercase letters
+    if counter == 90:  # previous char was ASCII Z
+        counter = 96   # the char before ASCII a, because we increment at the end of the function
 
     # Generate a new name
     names[token] = chr(counter) * (resets + 1)
 
     # Increment counter so that the next name is different
     counter += 1
-    if (counter > 90 and resets != 0) or counter > 122:  # ASCII Z or z
+    if counter > 122:
         counter = 65
         resets += 1
 
@@ -252,7 +252,7 @@ def minify(content: str):
         if prev and not attachble_tokens(prev, token):
             new_tokens.append(' ')
 
-        # Step 8. If the token is a name, but not a type, we mangle it.
+        # Step 8. If the token is a name, but not a keyword, we mangle it.
         if is_name(token) and not is_keyword(token):
             token = generate_name(token)
 
