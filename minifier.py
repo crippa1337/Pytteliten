@@ -75,13 +75,14 @@ def is_keyword(token: str) -> bool:
 
 
 def renameable(token: str) -> bool:
-    """Returns whether the token is renameable, i.e names that aren't types."""
+    """Returns whether the token is renameable, i.e names that aren't types/keywords."""
     return not is_keyword(token) and is_name(token)
 
 
 assert renameable('abcdefg')
 assert renameable('main')
 assert not renameable('int')
+assert not renameable('return')
 assert not renameable('1000')
 
 
@@ -252,7 +253,7 @@ def minify(content: str):
             new_tokens.append(' ')
 
         # Step 8. If the token is a name, but not a keyword, we mangle it.
-        if is_name(token) and not is_keyword(token):
+        if renameable(token):
             token = generate_name(token)
 
         prev = token
