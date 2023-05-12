@@ -1,5 +1,4 @@
 import re
-import sys
 
 #################
 # Name mangling #
@@ -22,16 +21,16 @@ def generate_name(token: str) -> str:
     if token in names:
         return names[token]
 
-    # Jump to lowercase letters
-    if counter == 90:  # previous char was ASCII Z
-        counter = 96   # the char before ASCII a, because we increment at the end of the function
-
     # Generate a new name
     names[token] = chr(counter) * (resets + 1)
 
+    # Jump to lowercase letters
+    if counter == 90:  # previous char was ASCII Z
+        counter = 96   # ASCII before 'a', because we increment after this to get to 'a'
+
     # Increment counter so that the next name is different
     counter += 1
-    if counter > 122:
+    if counter > 122:  # ASCII z
         counter = 65
         resets += 1
 
