@@ -7,7 +7,7 @@ import re
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-KEYWORDS = ['int', 'return', 'printf']
+KEYWORDS = ['int', 'return', 'printf', 'struct', 'main']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -80,7 +80,9 @@ def renameable(token: str) -> bool:
 
 
 assert renameable('abcdefg')
-assert renameable('main')
+assert renameable('a')
+assert renameable('a_123')
+assert not renameable('main')
 assert not renameable('int')
 assert not renameable('return')
 assert not renameable('1000')
