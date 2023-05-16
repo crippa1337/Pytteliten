@@ -7,7 +7,7 @@ import re
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-KEYWORDS = ['int', 'return', 'printf', 'struct', 'main']
+KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'typedef', 'std', 'uint64_t', 'cout', '__builtin_bswap64']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -90,7 +90,9 @@ assert not renameable('1000')
 
 def attach_eligble(token: str) -> bool:
     """Returns whether a token is eligble to be attached together to save whitespace."""
-    return token and not (is_name(token) or token.isnumeric())
+    # Some c++ numbers have suffixes like 1ULL which is 1 as an unsigned long long.
+    # We only check the first char of the token to be numeric to catch these cases.
+    return token and not (is_name(token) or token[0].isnumeric())
 
 
 assert attach_eligble(')')
@@ -224,7 +226,8 @@ def minify(content: str):
     # Step 3. Create token groups such as comments, strings, etc.
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
-    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
+    tokens = group_tokens(tokens, ['[', '['], [']', ']'])    # Attributes
+    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False) # Line comments
 
     new_tokens = []
     prev = None
@@ -239,6 +242,11 @@ def minify(content: str):
             continue
         # Block comment
         elif token.startswith('/*'):
+            continue
+        elif token.startswith('[['):
+            continue
+        # Remove const qualifier
+        elif token.startswith('const'):
             continue
 
         # Step 5. Remove newlines
