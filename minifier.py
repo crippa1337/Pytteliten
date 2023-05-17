@@ -7,7 +7,7 @@ import re
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint64_t', 'cout', '__builtin_bswap64', 'auto']
+KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint64_t', 'cout', '__builtin_bswap64', 'auto', 'const']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -244,9 +244,6 @@ def minify(content: str):
         elif token.startswith('/*'):
             continue
         elif token.startswith('[['):
-            continue
-        # Remove const qualifier
-        elif token.startswith('const'):
             continue
 
         # Step 5. Remove newlines
