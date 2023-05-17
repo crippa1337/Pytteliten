@@ -46,7 +46,7 @@ std::uint64_t MaskAntiDiagonal[] = {
     0x8000000000000000,
 };
 
-std::uint64_t slidingAttacks(std::uint64_t square, std::uint64_t occ,
+auto slidingAttacks(std::uint64_t square, std::uint64_t occ,
                              std::uint64_t mask) {
     return ((occ & mask) - (1ULL << square) ^
             __builtin_bswap64(__builtin_bswap64(occ & mask) -
@@ -54,17 +54,17 @@ std::uint64_t slidingAttacks(std::uint64_t square, std::uint64_t occ,
            mask;
 }
 
-std::uint64_t bishop(std::uint64_t sq, std::uint64_t occ) {
+auto bishop(std::uint64_t sq, std::uint64_t occ) {
     return slidingAttacks(sq, occ,
                           MaskDiagonal[7 + (sq >> 3) - (sq & 7)] ^
                               MaskAntiDiagonal[(sq >> 3) + (sq & 7)]);
 }
 
-std::uint64_t rook(std::uint64_t sq, std::uint64_t occ) {
+auto rook(std::uint64_t sq, std::uint64_t occ) {
     return slidingAttacks(sq, occ, MaskRank[sq >> 3] ^ MaskFile[sq & 7]);
 }
 
-std::uint64_t king(std::uint64_t sq) {
+auto king(std::uint64_t sq) {
     const auto as_bb = 1ULL << sq;
     // north south
     return as_bb << 8 | as_bb >> 8 |
@@ -74,7 +74,7 @@ std::uint64_t king(std::uint64_t sq) {
     (as_bb >> 9 | as_bb >> 7 | as_bb >> 1) & ~0x8080808080808080ULL;
 }
 
-std::uint64_t knight(uint64_t sq) {
+auto knight(uint64_t sq) {
     const auto as_bb = 1ULL << sq;
     return (as_bb << 15 | as_bb >> 17) & 0x7F7F7F7F7F7F7F7FULL |
            (as_bb << 17 | as_bb >> 15) & 0xFEFEFEFEFEFEFEFEULL |
