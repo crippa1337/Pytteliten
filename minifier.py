@@ -7,7 +7,8 @@ import re
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint64_t', 'cout', '__builtin_bswap64', 'auto', 'const']
+KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std',
+            'uint64_t', 'cout', '__builtin_bswap64', 'auto', 'const']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -227,7 +228,11 @@ def minify(content: str):
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
     tokens = group_tokens(tokens, ['[', '['], [']', ']'])    # Attributes
-    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False) # Line comments
+    tokens = group_tokens(tokens, ['/', '/', ' ', '!'],
+                          ['/', '/', ' ', '!'], False)       # Deletion regions
+    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
+
+    print(tokens)
 
     new_tokens = []
     prev = None
@@ -237,12 +242,13 @@ def minify(content: str):
 
     for token in tokens:
         # Step 4. Remove any of the following:
-        # Line comment
+        # Line comments and deletion regions
         if token.startswith('//'):
             continue
         # Block comment
         elif token.startswith('/*'):
             continue
+        # Attribute
         elif token.startswith('[['):
             continue
 

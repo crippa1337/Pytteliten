@@ -47,7 +47,7 @@ std::uint64_t MaskAntiDiagonal[] = {
 };
 
 auto slidingAttacks(std::uint64_t square, std::uint64_t occ,
-                             std::uint64_t mask) {
+                    std::uint64_t mask) {
     return ((occ & mask) - (1ULL << square) ^
             __builtin_bswap64(__builtin_bswap64(occ & mask) -
                               __builtin_bswap64((1ULL << square)))) &
@@ -70,8 +70,8 @@ auto king(std::uint64_t sq) {
     return as_bb << 8 | as_bb >> 8 |
            //	east, north east, south east
            (as_bb << 9 | as_bb << 7 | as_bb << 1) & ~0x101010101010101ULL |
-    // west, north west, south west
-    (as_bb >> 9 | as_bb >> 7 | as_bb >> 1) & ~0x8080808080808080ULL;
+           // west, north west, south west
+           (as_bb >> 9 | as_bb >> 7 | as_bb >> 1) & ~0x8080808080808080ULL;
 }
 
 auto knight(uint64_t sq) {
@@ -82,4 +82,12 @@ auto knight(uint64_t sq) {
            (as_bb << 6 | as_bb >> 10) & 0x3F3F3F3F3F3F3F3FULL;
 }
 
-int main() { std::cout << "hello :)"; }
+int main() {
+    std::cout << "hello :)";
+
+    // ! deletion region
+    std::cout << "i shouldn't be here";
+    std::cout << "not me either";
+    std::cout << "woops";
+    // ! deletion region
+}
