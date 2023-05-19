@@ -228,11 +228,12 @@ def minify(content: str):
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
     tokens = group_tokens(tokens, ['[', '['], [']', ']'])    # Attributes
-    tokens = group_tokens(tokens, ['/', '/', ' ', '!'],
-                          ['/', '/', ' ', '!'], False)       # Deletion regions
-    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
 
-    print(tokens)
+    # Deletion regions
+    tokens = group_tokens(tokens, ['/', '/', ' ', '!', 'delete', ' ', 'start'],
+                          ['/', '/', ' ', '!', 'delete', ' ', 'end'])
+
+    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
 
     new_tokens = []
     prev = None
