@@ -7,8 +7,9 @@ import re
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std',
-            'uint64_t', 'cout', '__builtin_bswap64', 'auto', 'const']
+KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint16_t', 'uint32_t', 'uint64_t', 'vector',
+            'push_back', 'back', 'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'auto',
+            'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -75,48 +76,48 @@ def is_keyword(token: str) -> bool:
     return token in KEYWORDS
 
 
-def renameable(token: str) -> bool:
-    """Returns whether the token is renameable, i.e names that aren't types/keywords."""
+def renamable(token: str) -> bool:
+    """Returns whether the token is renamable, i.e names that aren't types/keywords."""
     return not is_keyword(token) and is_name(token)
 
 
-assert renameable('abcdefg')
-assert renameable('a')
-assert renameable('a_123')
-assert not renameable('main')
-assert not renameable('int')
-assert not renameable('return')
-assert not renameable('1000')
+assert renamable('abcdefg')
+assert renamable('a')
+assert renamable('a_123')
+assert not renamable('main')
+assert not renamable('int')
+assert not renamable('return')
+assert not renamable('1000')
 
 
-def attach_eligble(token: str) -> bool:
-    """Returns whether a token is eligble to be attached together to save whitespace."""
+def attach_eligible(token: str) -> bool:
+    """Returns whether a token is eligible to be attached together to save whitespace."""
     # Some c++ numbers have suffixes like 1ULL which is 1 as an unsigned long long.
     # We only check the first char of the token to be numeric to catch these cases.
     return token and not (is_name(token) or token[0].isnumeric())
 
 
-assert attach_eligble(')')
-assert attach_eligble('+')
-assert attach_eligble('{')
-assert not attach_eligble('a_name')
-assert not attach_eligble('1')
-assert not attach_eligble('main')
+assert attach_eligible(')')
+assert attach_eligible('+')
+assert attach_eligible('{')
+assert not attach_eligible('a_name')
+assert not attach_eligible('1')
+assert not attach_eligible('main')
 
 
-def attachble_tokens(first: str, second: str) -> bool:
+def attachable_tokens(first: str, second: str) -> bool:
     """Returns whether two tokens can be attached together to save whitespace."""
-    return attach_eligble(first) or attach_eligble(second)
+    return attach_eligible(first) or attach_eligible(second)
 
 
-assert attachble_tokens('1', '+')
-assert attachble_tokens('{', '}')
-assert attachble_tokens('(', ')')
-assert attachble_tokens('{', 'printf')
-assert attachble_tokens('coolboy99', '+')
-assert not attachble_tokens('int', 'main')
-assert not attachble_tokens('1', '2')
-assert not attachble_tokens('return', '0')
+assert attachable_tokens('1', '+')
+assert attachable_tokens('{', '}')
+assert attachable_tokens('(', ')')
+assert attachable_tokens('{', 'printf')
+assert attachable_tokens('coolboy99', '+')
+assert not attachable_tokens('int', 'main')
+assert not attachable_tokens('1', '2')
+assert not attachable_tokens('return', '0')
 
 
 def group_tokens(token_list: list, start: list, end: list, include_end: bool = True) -> list:
@@ -238,6 +239,10 @@ def minify(content: str):
     new_tokens = []
     prev = None
 
+    # Replace true and false with 1 and 0
+    names['true'] = '1'
+    names['false'] = '0'
+
     for kw in KEYWORDS:
         names[kw] = kw
 
@@ -263,11 +268,11 @@ def minify(content: str):
 
         # Step 7. Add a seperator between tokens that can't be attached to each other.
         # For example: Two names (int main)
-        if prev and not attachble_tokens(prev, token):
+        if prev and not attachable_tokens(prev, token):
             new_tokens.append(' ')
 
         # Step 8. If the token is a name, but not a keyword, we mangle it.
-        if renameable(token):
+        if renamable(token):
             token = generate_name(token)
 
         prev = token
