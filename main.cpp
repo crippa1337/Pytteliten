@@ -42,22 +42,23 @@ std::uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
-[[nodiscard]] auto slidingAttacks(std::uint32_t square, std::uint64_t occ, std::uint64_t mask) {
+[[nodiscard]] std::uint64_t slidingAttacks(std::uint32_t square, std::uint64_t occ, std::uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
          & mask;
 }
 
-[[nodiscard]] auto getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
-    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)] ^ MaskAntiDiagonal[(sq >> 3) + (sq & 7)]);
+[[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
+    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
+            ^ slidingAttacks(sq, occ, MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
 // currently just file attacks
-[[nodiscard]] auto getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
+[[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ 0x101010101010101 << (sq & 7));
 }
 
-[[nodiscard]] auto getKingMoves(std::uint32_t sq, std::uint64_t) {
+[[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
     return asBb << 8
@@ -68,7 +69,7 @@ std::uint64_t MaskAntiDiagonal[]{
          | (asBb >> 9 | asBb >> 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
-[[nodiscard]] auto getKnightMoves(std::uint32_t sq, std::uint64_t) {
+[[nodiscard]] std::uint64_t getKnightMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     return (asBb << 15 | asBb >> 17) & 0x7F7F7F7F7F7F7F7FULL | (asBb << 17 | asBb >> 15) & 0xFEFEFEFEFEFEFEFEULL
          | (asBb << 10 | asBb >> 6) & 0xFCFCFCFCFCFCFCFCULL | (asBb << 6 | asBb >> 10) & 0x3F3F3F3F3F3F3F3FULL;
@@ -86,6 +87,19 @@ std::uint64_t MaskAntiDiagonal[]{
 //    promo = 0 (knight), 1 (bishop), 2 (rook), 3 (queen)
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
+
+[[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
+    auto str = std::string{
+        (char)('a' + (move >> 10 & 7)),
+        (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
+        (char)('a' + (move >> 4 & 7)),
+        (char)('1' + (move >> 7 & 7 ^ (blackToMove ? 7 : 0)))};
+
+    if ((move & 3) == 1)
+        str += "nbrq"[move >> 2 & 3];
+
+    return str;
+}
 
 struct BoardState {
     // pnbrqk ours theirs
@@ -218,6 +232,11 @@ struct Board {
 
         history.push_back(state);
 
+        // !delete start
+        if (state.boards[7] & 1ULL << (move >> 4 & 63))
+            assert(pieceOn(move >> 4 & 63) < 6);
+        // !delete end
+
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
             state.boards[pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
@@ -232,11 +251,6 @@ struct Board {
             state.boards[(move >> 2 & 3) + 1] ^= 1ULL << (move >> 4 & 63);  // set promo piece
         } else
             state.boards[piece] ^= (1ULL << (move >> 10)) | (1ULL << (move >> 4 & 63));
-
-        // !delete start
-        if (state.boards[7] & 1ULL << (move >> 4 & 63))
-            assert(pieceOn(move >> 4 & 63) < 6);
-        // !delete end
 
         // castling
         if ((move & 3) == 2) {
@@ -284,19 +298,6 @@ struct Board {
     }
 };
 
-[[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
-    auto str = std::string{
-        (char)('a' + (move >> 10 & 7)),
-        (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
-        (char)('a' + (move >> 4 & 7)),
-        (char)('1' + (move >> 7 & 7 ^ (blackToMove ? 7 : 0)))};
-
-    if ((move & 3) == 1)
-        str += "nbrq"[move >> 2 & 3];
-
-    return str;
-}
-
 // !delete start
 std::size_t doPerft(Board &board, std::int32_t depth) {
     if (depth == 0)
@@ -311,8 +312,10 @@ std::size_t doPerft(Board &board, std::int32_t depth) {
     while (const auto move = moves[i++]) {
         board.makeMove(move);
 
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6])))
+        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+            board.unmakeMove();
             continue;
+        }
 
         total += doPerft(board, depth - 1);
 
@@ -332,8 +335,10 @@ void perft(Board &board, std::int32_t depth) {
     while (const auto move = moves[i++]) {
         board.makeMove(move);
 
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6])))
+        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+            board.unmakeMove();
             continue;
+        }
 
         const auto value = doPerft(board, depth - 1);
         total += value;
@@ -352,14 +357,14 @@ int main() {
     Board board{};
 
     // rnbqkbnr/pppp1ppp/8/4p3/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1
-    board.state.boards[0] = 0x00EF00100100FE00ULL;
+    board.state.boards[0] = 0x00FF00000000FF00ULL;
     board.state.boards[1] = 0x4200000000000042ULL;
     board.state.boards[2] = 0x2400000000000024ULL;
     board.state.boards[3] = 0x8100000000000081ULL;
     board.state.boards[4] = 0x0800000000000008ULL;
     board.state.boards[5] = 0x1000000000000010ULL;
-    board.state.boards[6] = 0x000000000100FEFFULL;
-    board.state.boards[7] = 0xFFEF001000000000ULL;
+    board.state.boards[6] = 0x000000000000FFFFULL;
+    board.state.boards[7] = 0xFFFF000000000000ULL;
 
     board.state.castlingRights[0][0] = true;
     board.state.castlingRights[0][1] = true;
@@ -368,6 +373,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 1);
+    perft(board, 4);
     // !delete end
 }
