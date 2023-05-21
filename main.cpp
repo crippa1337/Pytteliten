@@ -219,6 +219,11 @@ struct Board {
 
         history.push_back(state);
 
+        // !delete start
+        if (state.boards[7] & 1ULL << (move >> 4 & 63))
+            assert(pieceOn(move >> 4 & 63) < 6);
+        // !delete end
+
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
             state.boards[pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
@@ -233,11 +238,6 @@ struct Board {
             state.boards[(move >> 2 & 3) + 1] ^= 1ULL << (move >> 4 & 63);  // set promo piece
         } else
             state.boards[piece] ^= (1ULL << (move >> 10)) | (1ULL << (move >> 4 & 63));
-
-        // !delete start
-        if (state.boards[7] & 1ULL << (move >> 4 & 63))
-            assert(pieceOn(move >> 4 & 63) < 6);
-        // !delete end
 
         // castling
         if ((move & 3) == 2) {
