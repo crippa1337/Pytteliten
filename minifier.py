@@ -9,7 +9,7 @@ import re
 names = dict()
 KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint16_t', 'uint32_t', 'uint64_t', 'vector',
             'push_back', 'back', 'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'auto',
-            'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void']
+            'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void', 'string', 'char']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A

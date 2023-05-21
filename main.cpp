@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <vector>
 
 // !delete start
@@ -148,7 +149,7 @@ struct Board {
 
     void generateMoves(std::uint16_t *moves, bool quiescence) const {
         {  // left pawn attacks
-            auto attacks = ((state.boards[0] << 7) & 0x7F7F7F7F7F7F7F7FULL)
+            auto attacks = (((state.boards[0] & state.boards[6]) << 7) & 0x7F7F7F7F7F7F7F7FULL)
                          & (state.boards[7] | (state.epSquare < 64 ? (1ULL << state.epSquare) : 0));
             while (attacks) {
                 const auto to = __builtin_ctzll(attacks);
@@ -162,7 +163,7 @@ struct Board {
         }
 
         {  // right pawn attacks
-            auto attacks = ((state.boards[0] << 9) & 0xFEFEFEFEFEFEFEFEULL)
+            auto attacks = (((state.boards[0] & state.boards[6]) << 9) & 0xFEFEFEFEFEFEFEFEULL)
                          & (state.boards[7] | (state.epSquare < 64 ? (1ULL << state.epSquare) : 0));
             while (attacks) {
                 const auto to = __builtin_ctzll(attacks);
@@ -176,7 +177,7 @@ struct Board {
         }
 
         if (!quiescence) {
-            auto singlePushes = (state.boards[0] << 8) & ~(state.boards[6] | state.boards[7]);
+            auto singlePushes = ((state.boards[0] & state.boards[6]) << 8) & ~(state.boards[6] | state.boards[7]);
             auto doublePushes = ((singlePushes & 0xFF0000) << 8) & ~(state.boards[6] | state.boards[7]);
 
             while (doublePushes) {
@@ -229,6 +230,12 @@ struct Board {
 
         history.push_back(state);
 
+        // remove captured piece
+        if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
+            state.boards[pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
+            state.boards[7] ^= 1ULL << (move >> 4 & 63);
+        }
+
         state.boards[6] ^= (1ULL << (move >> 10)) | (1ULL << (move >> 4 & 63));
 
         // promotion
@@ -242,12 +249,6 @@ struct Board {
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(pieceOn(move >> 4 & 63) < 6);
         // !delete end
-
-        // remove captured piece (or put it back in the piece bb if it was the same piece as the one that moved)
-        if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
-            state.boards[pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
-            state.boards[7] ^= 1ULL << (move >> 4 & 63);
-        }
 
         // castling
         if ((move & 3) == 2) {
@@ -295,6 +296,19 @@ struct Board {
     }
 };
 
+[[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
+    auto str = std::string{
+        (char)('a' + (move >> 10 & 7)),
+        (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
+        (char)('a' + (move >> 4 & 7)),
+        (char)('1' + (move >> 7 & 7 ^ (blackToMove ? 7 : 0)))};
+
+    if ((move & 3) == 1)
+        str += "nbrq"[move >> 2 & 3];
+
+    return str;
+}
+
 // !delete start
 std::size_t doPerft(Board &board, std::int32_t depth) {
     if (depth == 0)
@@ -333,13 +347,15 @@ void perft(Board &board, std::int32_t depth) {
         if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6])))
             continue;
 
-        // TODO split perft
-        total += doPerft(board, depth - 1);
+        const auto value = doPerft(board, depth - 1);
+        total += value;
 
         board.unmakeMove();
+
+        std::cout << moveToString(move, board.state.flags[0]) << "\t" << value << std::endl;
     }
 
-    std::cout << i << " nodes" << std::endl;
+    std::cout << total << " nodes" << std::endl;
 }
 // !delete end
 
