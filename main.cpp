@@ -195,12 +195,16 @@ struct Board {
                     *(moves++) = ((to - 8) << 10) | (to << 4);
             }
 
+            // if not in check, and we have short castling rights, and F1 and G1 are empty
             if (!state.flags[1] && state.castlingRights[0][0] && !((state.boards[6] | state.boards[7]) & 96 /* f1 | g1 */)
-                && !attackedByOpponent(5 /* f1 */) && !attackedByOpponent(6 /* g1 */))
+                // and F1 is not attacked
+                && !attackedByOpponent(5 /* f1 */))
                 *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 3
 
+            // if not in check, and we have short castling rights, and F1 and G1 are empty
             if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 12 /* c1 | d1 */)
-                && !attackedByOpponent(2 /* c1 */) && !attackedByOpponent(3 /* d1 */))
+                // and D1 is not attacked
+                && !attackedByOpponent(3 /* d1 */))
                 *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 3
         }
 
@@ -235,18 +239,23 @@ struct Board {
             state.boards[piece] ^= (1ULL << (move >> 10)) | (1ULL << (move >> 4 & 63));
 
         // !delete start
-        if (state.boards[7] & 1ULL << (move >> 10))
+        if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(pieceOn(move >> 4 & 63) < 6);
         // !delete end
 
-        // remove captured piece
-        if (state.boards[7] & 1ULL << (move >> 10))
-            state.boards[pieceOn(move >> 4 & 63)] &= (state.boards[7] ^= 1ULL << (move >> 4 & 63));
+        // remove captured piece (or put it back in the piece bb if it was the same piece as the one that moved)
+        if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
+            state.boards[pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
+            state.boards[7] ^= 1ULL << (move >> 4 & 63);
+        }
 
         // castling
         if ((move & 3) == 2) {
-            state.boards[3] ^= (move & 16) ? 160 : 9;
-            state.boards[6] ^= (move & 16) ? 160 : 9;
+            // if bit 6 (0b1000000 = 64) is set, then the to square is on the right side of the board
+            // therefore we're short castling, so move the rook from h1 to f1 (0b10100000 = 160)
+            // otherwise, we're long castling - move the rook from a1 to d1 (0b1001 = 9)
+            state.boards[3] ^= (move & 64) ? 160 : 9;
+            state.boards[6] ^= (move & 64) ? 160 : 9;
         }
 
         state.epSquare = 64;
