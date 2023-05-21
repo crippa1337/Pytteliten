@@ -42,22 +42,23 @@ std::uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
-[[nodiscard]] auto slidingAttacks(std::uint32_t square, std::uint64_t occ, std::uint64_t mask) {
+[[nodiscard]] std::uint64_t slidingAttacks(std::uint32_t square, std::uint64_t occ, std::uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
          & mask;
 }
 
-[[nodiscard]] auto getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
-    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)] ^ MaskAntiDiagonal[(sq >> 3) + (sq & 7)]);
+[[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
+    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq & 7) - (sq >> 3)])
+            ^ slidingAttacks(sq, occ, MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
 // currently just file attacks
-[[nodiscard]] auto getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
+[[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ 0x101010101010101 << (sq & 7));
 }
 
-[[nodiscard]] auto getKingMoves(std::uint32_t sq, std::uint64_t) {
+[[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
     return asBb << 8
@@ -68,7 +69,7 @@ std::uint64_t MaskAntiDiagonal[]{
          | (asBb >> 9 | asBb >> 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
-[[nodiscard]] auto getKnightMoves(std::uint32_t sq, std::uint64_t) {
+[[nodiscard]] std::uint64_t getKnightMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     return (asBb << 15 | asBb >> 17) & 0x7F7F7F7F7F7F7F7FULL | (asBb << 17 | asBb >> 15) & 0xFEFEFEFEFEFEFEFEULL
          | (asBb << 10 | asBb >> 6) & 0xFCFCFCFCFCFCFCFCULL | (asBb << 6 | asBb >> 10) & 0x3F3F3F3F3F3F3F3FULL;
@@ -352,14 +353,14 @@ int main() {
     Board board{};
 
     // rnbqkbnr/pppp1ppp/8/4p3/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1
-    board.state.boards[0] = 0x00EF00100100FE00ULL;
+    board.state.boards[0] = 0x00FF00000000FF00ULL;
     board.state.boards[1] = 0x4200000000000042ULL;
     board.state.boards[2] = 0x2400000000000024ULL;
     board.state.boards[3] = 0x8100000000000081ULL;
     board.state.boards[4] = 0x0800000000000008ULL;
     board.state.boards[5] = 0x1000000000000010ULL;
-    board.state.boards[6] = 0x000000000100FEFFULL;
-    board.state.boards[7] = 0xFFEF001000000000ULL;
+    board.state.boards[6] = 0x000000000000FFFFULL;
+    board.state.boards[7] = 0xFFFF000000000000ULL;
 
     board.state.castlingRights[0][0] = true;
     board.state.castlingRights[0][1] = true;
