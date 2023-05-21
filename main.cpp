@@ -6,19 +6,6 @@
 #include <cassert>
 // !delete end
 
-std::uint64_t MaskFile[]{
-    0x101010101010101,
-    0x202020202020202,
-    0x404040404040404,
-    0x808080808080808,
-    0x1010101010101010,
-    0x2020202020202020,
-    0x4040404040404040,
-    0x8080808080808080,
-};
-
-std::uint64_t MaskRank[]{0xff, 0xff00, 0xff0000, 0xff000000, 0xff00000000, 0xff0000000000, 0xff000000000000, 0xff00000000000000};
-
 std::uint64_t MaskDiagonal[]{
     0x80,
     0x8040,
@@ -57,7 +44,7 @@ std::uint64_t MaskAntiDiagonal[]{
 
 [[nodiscard]] auto slidingAttacks(std::uint32_t square, std::uint64_t occ, std::uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
-            ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64((1ULL << square))))
+            ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
          & mask;
 }
 
@@ -65,8 +52,9 @@ std::uint64_t MaskAntiDiagonal[]{
     return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)] ^ MaskAntiDiagonal[(sq >> 3) + (sq & 7)]);
 }
 
+// currently just file attacks
 [[nodiscard]] auto getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
-    return slidingAttacks(sq, occ, MaskRank[sq >> 3] ^ MaskFile[sq & 7]);
+    return slidingAttacks(sq, occ, (1ULL << sq) ^ 0x101010101010101 << (sq & 7));
 }
 
 [[nodiscard]] auto getKingMoves(std::uint32_t sq, std::uint64_t) {
@@ -154,7 +142,7 @@ struct Board {
             while (attacks) {
                 const auto to = __builtin_ctzll(attacks);
                 attacks &= attacks - 1;
-                if (to > 56) {
+                if (to > 55) {
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 4) + 1 == 13
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 4) + 1 == 1
                 } else
@@ -168,7 +156,7 @@ struct Board {
             while (attacks) {
                 const auto to = __builtin_ctzll(attacks);
                 attacks &= attacks - 1;
-                if (to > 56) {
+                if (to > 55) {
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 1;
                 } else
@@ -189,7 +177,7 @@ struct Board {
             while (singlePushes) {
                 const auto to = __builtin_ctzll(singlePushes);
                 singlePushes &= singlePushes - 1;
-                if (to > 56) {
+                if (to > 55) {
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 1;
                 } else
@@ -363,15 +351,15 @@ int main() {
     // !delete start
     Board board{};
 
-    // startpos
-    board.state.boards[0] = 0x00FF00000000FF00ULL;
+    // rnbqkbnr/pppp1ppp/8/4p3/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1
+    board.state.boards[0] = 0x00EF00100100FE00ULL;
     board.state.boards[1] = 0x4200000000000042ULL;
     board.state.boards[2] = 0x2400000000000024ULL;
     board.state.boards[3] = 0x8100000000000081ULL;
     board.state.boards[4] = 0x0800000000000008ULL;
     board.state.boards[5] = 0x1000000000000010ULL;
-    board.state.boards[6] = 0x000000000000FFFFULL;
-    board.state.boards[7] = 0xFFFF000000000000ULL;
+    board.state.boards[6] = 0x000000000100FEFFULL;
+    board.state.boards[7] = 0xFFEF001000000000ULL;
 
     board.state.castlingRights[0][0] = true;
     board.state.castlingRights[0][1] = true;
