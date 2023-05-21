@@ -49,7 +49,7 @@ std::uint64_t MaskAntiDiagonal[]{
 }
 
 [[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
-    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq & 7) - (sq >> 3)])
+    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
             ^ slidingAttacks(sq, occ, MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
@@ -87,6 +87,19 @@ std::uint64_t MaskAntiDiagonal[]{
 //    promo = 0 (knight), 1 (bishop), 2 (rook), 3 (queen)
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
+
+[[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
+    auto str = std::string{
+        (char)('a' + (move >> 10 & 7)),
+        (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
+        (char)('a' + (move >> 4 & 7)),
+        (char)('1' + (move >> 7 & 7 ^ (blackToMove ? 7 : 0)))};
+
+    if ((move & 3) == 1)
+        str += "nbrq"[move >> 2 & 3];
+
+    return str;
+}
 
 struct BoardState {
     // pnbrqk ours theirs
@@ -285,19 +298,6 @@ struct Board {
     }
 };
 
-[[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
-    auto str = std::string{
-        (char)('a' + (move >> 10 & 7)),
-        (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
-        (char)('a' + (move >> 4 & 7)),
-        (char)('1' + (move >> 7 & 7 ^ (blackToMove ? 7 : 0)))};
-
-    if ((move & 3) == 1)
-        str += "nbrq"[move >> 2 & 3];
-
-    return str;
-}
-
 // !delete start
 std::size_t doPerft(Board &board, std::int32_t depth) {
     if (depth == 0)
@@ -312,8 +312,10 @@ std::size_t doPerft(Board &board, std::int32_t depth) {
     while (const auto move = moves[i++]) {
         board.makeMove(move);
 
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6])))
+        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+            board.unmakeMove();
             continue;
+        }
 
         total += doPerft(board, depth - 1);
 
@@ -333,8 +335,10 @@ void perft(Board &board, std::int32_t depth) {
     while (const auto move = moves[i++]) {
         board.makeMove(move);
 
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6])))
+        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+            board.unmakeMove();
             continue;
+        }
 
         const auto value = doPerft(board, depth - 1);
         total += value;
@@ -369,6 +373,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 1);
+    perft(board, 4);
     // !delete end
 }
