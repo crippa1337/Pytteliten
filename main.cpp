@@ -66,12 +66,11 @@ std::uint64_t MaskAntiDiagonal[]{
 [[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
-    return asBb << 8
-         | asBb >> 8
-         // east, north east, south east
-         | (asBb << 9 | asBb << 7 | asBb << 1) & ~0x101010101010101ULL
-         // west, north west, south west
-         | (asBb >> 9 | asBb >> 7 | asBb >> 1) & ~0x8080808080808080ULL;
+    return asBb << 8 | asBb >> 8
+           // east, north east, south east
+           | (asBb << 9 | asBb >> 7 | asBb << 1) & ~0x101010101010101ULL
+           // west, north west, south west
+           | (asBb >> 9 | asBb << 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
 [[nodiscard]] std::uint64_t getKnightMoves(std::uint32_t sq, std::uint64_t) {
@@ -317,7 +316,7 @@ std::size_t doPerft(Board &board, std::int32_t depth) {
     while (const auto move = moves[i++]) {
         board.makeMove(move);
 
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+        if (board.state.flags[1]) {
             board.unmakeMove();
             continue;
         }
@@ -340,7 +339,7 @@ void perft(Board &board, std::int32_t depth) {
     while (const auto move = moves[i++]) {
         board.makeMove(move);
 
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+        if (board.state.flags[1]) {
             board.unmakeMove();
             continue;
         }
@@ -378,6 +377,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 3);
+    perft(board, 5);
     // !delete end
 }
