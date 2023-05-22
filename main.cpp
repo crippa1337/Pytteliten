@@ -267,7 +267,7 @@ struct Board {
 
         state.epSquare = 64;
         // en passant
-        if (piece == 0 && (move >> 7) - (move >> 13 & 7) == 2)
+        if (piece == 0 && (move >> 7 & 7) - (move >> 13 & 7) == 2)
             state.epSquare = 40 + (move >> 4 & 7);
 
         // remove castling rights
