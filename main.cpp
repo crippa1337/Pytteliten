@@ -209,7 +209,7 @@ struct Board {
                 *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 3
 
             // if not in check, and we have short castling rights, and F1 and G1 are empty
-            if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 12 /* c1 | d1 */)
+            if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 14 /* b1 | c1 | d1 */)
                 // and D1 is not attacked
                 && !attackedByOpponent(3 /* d1 */))
                 *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 3
@@ -225,7 +225,7 @@ struct Board {
                            getKingMoves, state.boards[5] & state.boards[6]);
     }
 
-    void makeMove(std::uint16_t move) {
+    bool makeMove(std::uint16_t move) {
         const auto piece = pieceOn(move >> 10);
         // !delete start
         assert(piece < 6);
@@ -288,7 +288,9 @@ struct Board {
         // to square == a8
         state.castlingRights[1][1] &= (move & 64512) != 57344;
 
-        state.flags[1] = attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        if (attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6])))
+            return true;
+
         state.flags[0] = !state.flags[0];
 
         for (auto &board : state.boards)
@@ -296,6 +298,9 @@ struct Board {
 
         std::swap(state.boards[6], state.boards[7]);
         std::swap(state.castlingRights[0], state.castlingRights[1]);
+        state.flags[1] = attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+
+        return false;
     }
 
     void unmakeMove() {
@@ -320,14 +325,12 @@ std::size_t doPerft(Board &board, std::int32_t depth) {
 
     std::size_t i = 0;
     while (const auto move = moves[i++]) {
-        board.makeMove(move);
-
-        if (board.state.flags[1]) {
+        if (board.makeMove(move)) {
             board.unmakeMove();
             continue;
         }
 
-        total += doPerft(board, depth - 1);
+        total += depth > 1 ? doPerft(board, depth - 1) : 1;
 
         board.unmakeMove();
     }
@@ -343,9 +346,7 @@ void perft(Board &board, std::int32_t depth) {
 
     std::size_t i = 0;
     while (const auto move = moves[i++]) {
-        board.makeMove(move);
-
-        if (board.state.flags[1]) {
+        if (board.makeMove(move)) {
             board.unmakeMove();
             continue;
         }
@@ -383,6 +384,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 6);
+    perft(board, 7);
     // !delete end
 }
