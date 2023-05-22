@@ -265,8 +265,14 @@ struct Board {
             state.boards[6] ^= (move & 64) ? 160 : 9;
         }
 
-        state.epSquare = 64;
         // en passant
+        if ((move & 3) == 3) {
+            state.boards[0] ^= 1ULL << ((move >> 4 & 63) - 8);
+            state.boards[7] ^= 1ULL << ((move >> 4 & 63) - 8);
+        }
+
+        state.epSquare = 64;
+        // double push - set en passant square
         if (piece == 0 && (move >> 7 & 7) - (move >> 13 & 7) == 2)
             state.epSquare = 40 + (move >> 4 & 7);
 
@@ -377,6 +383,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 5);
+    perft(board, 6);
     // !delete end
 }
