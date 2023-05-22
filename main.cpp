@@ -49,8 +49,8 @@ std::uint64_t MaskAntiDiagonal[]{
 }
 
 [[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
-    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
-            ^ slidingAttacks(sq, occ, MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
+    return slidingAttacks(sq, occ, (1ULL << sq) ^ MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
+         ^ slidingAttacks(sq, occ, (1ULL << sq) ^ MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
 [[nodiscard]] std::uint64_t getFileMoves(std::uint32_t sq, std::uint64_t occ) {
@@ -59,19 +59,22 @@ std::uint64_t MaskAntiDiagonal[]{
 
 [[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
     return getFileMoves(sq, occ)
-      | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
-            & 0x0101010101010101) * 0x8040201008040201) >> 56 & 0xFF) << (sq - (sq & 7)));
+         | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
+                                             & 0x0101010101010101)
+              * 0x8040201008040201)
+                 >> 56
+             & 0xFF)
+            << (sq - (sq & 7)));
 }
 
 [[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
-    return asBb << 8
-         | asBb >> 8
+    return asBb << 8 | asBb >> 8
          // east, north east, south east
-         | (asBb << 9 | asBb << 7 | asBb << 1) & ~0x101010101010101ULL
+         | (asBb << 9 | asBb >> 7 | asBb << 1) & ~0x101010101010101ULL
          // west, north west, south west
-         | (asBb >> 9 | asBb >> 7 | asBb >> 1) & ~0x8080808080808080ULL;
+         | (asBb >> 9 | asBb << 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
 [[nodiscard]] std::uint64_t getKnightMoves(std::uint32_t sq, std::uint64_t) {
@@ -133,7 +136,7 @@ struct Board {
 
     [[nodiscard]] bool attackedByOpponent(std::uint32_t sq) const {
         const auto bb = 1ULL << sq;
-        return (((bb << 7) | (bb << 9)) & state.boards[0] & state.boards[7])                                                        // pawns
+        return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & state.boards[0] & state.boards[7])    // pawns
             || (getKnightMoves(sq, 0) & state.boards[1] & state.boards[7])                                                          // knights
             || (getKingMoves(sq, 0) & state.boards[5] & state.boards[7])                                                            // kings
             || (getOrthogonalMoves(sq, state.boards[6] | state.boards[7]) & (state.boards[3] | state.boards[4]) & state.boards[7])  // rooks and queens
@@ -162,8 +165,12 @@ struct Board {
                 const auto to = __builtin_ctzll(attacks);
                 attacks &= attacks - 1;
                 if (to > 55) {
-                    *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 4) + 1 == 13
-                    *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 4) + 1 == 1
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 2) + 1 == 13
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 2) + 1 == 1
+                    // !delete start
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 9;  //   rook promo = (2 << 2) + 1 == 9
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 5;  // bishop promo = (1 << 2) + 1 == 5
+                    // !delete end
                 } else
                     *(moves++) = ((to - 7) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -178,6 +185,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 1;
+                    // !delete start
+                    *(moves++) = ((to - 9) << 10) | (to << 4) | 9;
+                    *(moves++) = ((to - 9) << 10) | (to << 4) | 5;
+                    // !delete end
                 } else
                     *(moves++) = ((to - 9) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -199,6 +210,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 1;
+                    // !delete start
+                    *(moves++) = ((to - 8) << 10) | (to << 4) | 9;
+                    *(moves++) = ((to - 8) << 10) | (to << 4) | 5;
+                    // !delete end
                 } else
                     *(moves++) = ((to - 8) << 10) | (to << 4);
             }
@@ -207,13 +222,13 @@ struct Board {
             if (!state.flags[1] && state.castlingRights[0][0] && !((state.boards[6] | state.boards[7]) & 96 /* f1 | g1 */)
                 // and F1 is not attacked
                 && !attackedByOpponent(5 /* f1 */))
-                *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 3
+                *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 2
 
             // if not in check, and we have short castling rights, and F1 and G1 are empty
-            if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 12 /* c1 | d1 */)
+            if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 14 /* b1 | c1 | d1 */)
                 // and D1 is not attacked
                 && !attackedByOpponent(3 /* d1 */))
-                *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 3
+                *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 2
         }
 
         generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6],
@@ -226,7 +241,7 @@ struct Board {
                            getKingMoves, state.boards[5] & state.boards[6]);
     }
 
-    void makeMove(std::uint16_t move) {
+    bool makeMove(std::uint16_t move) {
         const auto piece = pieceOn(move >> 10);
         // !delete start
         assert(piece < 6);
@@ -266,24 +281,33 @@ struct Board {
             state.boards[6] ^= (move & 64) ? 160 : 9;
         }
 
-        state.epSquare = 64;
         // en passant
-        if (piece == 0 && (move >> 7) - (move >> 13 & 7) == 2)
+        if ((move & 3) == 3) {
+            state.boards[0] ^= 1ULL << ((move >> 4 & 63) - 8);
+            state.boards[7] ^= 1ULL << ((move >> 4 & 63) - 8);
+        }
+
+        state.epSquare = 64;
+        // double push - set en passant square
+        if (piece == 0 && (move >> 7 & 7) - (move >> 13 & 7) == 2)
             state.epSquare = 40 + (move >> 4 & 7);
 
         // remove castling rights
-        if (piece == 5)  // king moving
+        // king moving
+        if (piece == 5)
             state.castlingRights[0][0] = state.castlingRights[0][1] = false;
         // from square == h1
-        state.castlingRights[0][0] &= (move & 1008) != 112;
+        state.castlingRights[0][0] &= (move & 64512) != 7168;
         // from square == a1
-        state.castlingRights[0][1] &= !!(move & 1008);
+        state.castlingRights[0][1] &= (move & 64512) != 0;
         // to square == h8
-        state.castlingRights[1][0] &= (move & 64512) != 64512;
+        state.castlingRights[1][0] &= (move & 1008) != 1008;
         // to square == a8
-        state.castlingRights[1][1] &= (move & 64512) != 57344;
+        state.castlingRights[1][1] &= (move & 1008) != 896;
 
-        state.flags[1] = attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        if (attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6])))
+            return true;
+
         state.flags[0] = !state.flags[0];
 
         for (auto &board : state.boards)
@@ -291,6 +315,9 @@ struct Board {
 
         std::swap(state.boards[6], state.boards[7]);
         std::swap(state.castlingRights[0], state.castlingRights[1]);
+        state.flags[1] = attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+
+        return false;
     }
 
     void unmakeMove() {
@@ -315,14 +342,12 @@ std::size_t doPerft(Board &board, std::int32_t depth) {
 
     std::size_t i = 0;
     while (const auto move = moves[i++]) {
-        board.makeMove(move);
-
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+        if (board.makeMove(move)) {
             board.unmakeMove();
             continue;
         }
 
-        total += doPerft(board, depth - 1);
+        total += depth > 1 ? doPerft(board, depth - 1) : 1;
 
         board.unmakeMove();
     }
@@ -338,9 +363,7 @@ void perft(Board &board, std::int32_t depth) {
 
     std::size_t i = 0;
     while (const auto move = moves[i++]) {
-        board.makeMove(move);
-
-        if (board.attackedByOpponent(__builtin_ctzll(board.state.boards[5] & board.state.boards[6]))) {
+        if (board.makeMove(move)) {
             board.unmakeMove();
             continue;
         }
@@ -378,6 +401,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 3);
+    perft(board, 7);
     // !delete end
 }
