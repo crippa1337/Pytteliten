@@ -53,9 +53,14 @@ std::uint64_t MaskAntiDiagonal[]{
             ^ slidingAttacks(sq, occ, MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
-// currently just file attacks
-[[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
+[[nodiscard]] std::uint64_t getFileMoves(std::uint32_t sq, std::uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ 0x101010101010101 << (sq & 7));
+}
+
+[[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
+    return getFileMoves(sq, occ)
+      | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
+            & 0x0101010101010101) * 0x8040201008040201) >> 56 & 0xFF) << (sq - (sq & 7)));
 }
 
 [[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
@@ -356,7 +361,7 @@ int main() {
     // !delete start
     Board board{};
 
-    // rnbqkbnr/pppp1ppp/8/4p3/P7/8/1PPPPPPP/RNBQKBNR w KQkq - 0 1
+    // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     board.state.boards[0] = 0x00FF00000000FF00ULL;
     board.state.boards[1] = 0x4200000000000042ULL;
     board.state.boards[2] = 0x2400000000000024ULL;
@@ -373,6 +378,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 4);
+    perft(board, 3);
     // !delete end
 }
