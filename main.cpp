@@ -50,7 +50,7 @@ std::uint64_t MaskAntiDiagonal[]{
 
 [[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
-            ^ slidingAttacks(sq, occ, (1ULL << sq) ^ MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
+         ^ slidingAttacks(sq, occ, (1ULL << sq) ^ MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
 [[nodiscard]] std::uint64_t getFileMoves(std::uint32_t sq, std::uint64_t occ) {
@@ -59,18 +59,22 @@ std::uint64_t MaskAntiDiagonal[]{
 
 [[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
     return getFileMoves(sq, occ)
-      | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
-            & 0x0101010101010101) * 0x8040201008040201) >> 56 & 0xFF) << (sq - (sq & 7)));
+         | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
+                                             & 0x0101010101010101)
+              * 0x8040201008040201)
+                 >> 56
+             & 0xFF)
+            << (sq - (sq & 7)));
 }
 
 [[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
     return asBb << 8 | asBb >> 8
-           // east, north east, south east
-           | (asBb << 9 | asBb >> 7 | asBb << 1) & ~0x101010101010101ULL
-           // west, north west, south west
-           | (asBb >> 9 | asBb << 7 | asBb >> 1) & ~0x8080808080808080ULL;
+         // east, north east, south east
+         | (asBb << 9 | asBb >> 7 | asBb << 1) & ~0x101010101010101ULL
+         // west, north west, south west
+         | (asBb >> 9 | asBb << 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
 [[nodiscard]] std::uint64_t getKnightMoves(std::uint32_t sq, std::uint64_t) {
@@ -132,7 +136,7 @@ struct Board {
 
     [[nodiscard]] bool attackedByOpponent(std::uint32_t sq) const {
         const auto bb = 1ULL << sq;
-        return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & state.boards[0] & state.boards[7])                                                        // pawns
+        return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & state.boards[0] & state.boards[7])    // pawns
             || (getKnightMoves(sq, 0) & state.boards[1] & state.boards[7])                                                          // knights
             || (getKingMoves(sq, 0) & state.boards[5] & state.boards[7])                                                            // kings
             || (getOrthogonalMoves(sq, state.boards[6] | state.boards[7]) & (state.boards[3] | state.boards[4]) & state.boards[7])  // rooks and queens
@@ -161,8 +165,8 @@ struct Board {
                 const auto to = __builtin_ctzll(attacks);
                 attacks &= attacks - 1;
                 if (to > 55) {
-                    *(moves++) = ((to - 7) << 10) | (to << 4) | 13; //  queen promo = (3 << 2) + 1 == 13
-                    *(moves++) = ((to - 7) << 10) | (to << 4) | 1;  // knight promo = (0 << 2) + 1 == 1
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 2) + 1 == 13
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 2) + 1 == 1
                     // !delete start
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 9;  //   rook promo = (2 << 2) + 1 == 9
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 5;  // bishop promo = (1 << 2) + 1 == 5
@@ -369,7 +373,7 @@ void perft(Board &board, std::int32_t depth) {
 
         board.unmakeMove();
 
-        std::cout << moveToString(move, board.state.flags[0]) << ": " << value << std::endl;
+        std::cout << moveToString(move, board.state.flags[0]) << "\t" << value << std::endl;
     }
 
     std::cout << total << " nodes" << std::endl;
