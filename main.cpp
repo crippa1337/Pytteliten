@@ -161,8 +161,12 @@ struct Board {
                 const auto to = __builtin_ctzll(attacks);
                 attacks &= attacks - 1;
                 if (to > 55) {
-                    *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 4) + 1 == 13
-                    *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 4) + 1 == 1
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 13; //  queen promo = (3 << 2) + 1 == 13
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 1;  // knight promo = (0 << 2) + 1 == 1
+                    // !delete start
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 9;  //   rook promo = (2 << 2) + 1 == 9
+                    *(moves++) = ((to - 7) << 10) | (to << 4) | 5;  // bishop promo = (1 << 2) + 1 == 5
+                    // !delete end
                 } else
                     *(moves++) = ((to - 7) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -177,6 +181,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 1;
+                    // !delete start
+                    *(moves++) = ((to - 9) << 10) | (to << 4) | 9;
+                    *(moves++) = ((to - 9) << 10) | (to << 4) | 5;
+                    // !delete end
                 } else
                     *(moves++) = ((to - 9) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -198,6 +206,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 1;
+                    // !delete start
+                    *(moves++) = ((to - 8) << 10) | (to << 4) | 9;
+                    *(moves++) = ((to - 8) << 10) | (to << 4) | 5;
+                    // !delete end
                 } else
                     *(moves++) = ((to - 8) << 10) | (to << 4);
             }
@@ -277,16 +289,17 @@ struct Board {
             state.epSquare = 40 + (move >> 4 & 7);
 
         // remove castling rights
-        if (piece == 5)  // king moving
+        // king moving
+        if (piece == 5)
             state.castlingRights[0][0] = state.castlingRights[0][1] = false;
         // from square == h1
-        state.castlingRights[0][0] &= (move & 1008) != 112;
+        state.castlingRights[0][0] &= (move & 64512) != 7168;
         // from square == a1
-        state.castlingRights[0][1] &= !!(move & 1008);
+        state.castlingRights[0][1] &= (move & 64512) != 0;
         // to square == h8
-        state.castlingRights[1][0] &= (move & 64512) != 64512;
+        state.castlingRights[1][0] &= (move & 1008) != 1008;
         // to square == a8
-        state.castlingRights[1][1] &= (move & 64512) != 57344;
+        state.castlingRights[1][1] &= (move & 1008) != 896;
 
         if (attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6])))
             return true;
