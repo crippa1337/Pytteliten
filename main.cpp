@@ -49,8 +49,8 @@ std::uint64_t MaskAntiDiagonal[]{
 }
 
 [[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
-    return slidingAttacks(sq, occ, MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
-            ^ slidingAttacks(sq, occ, MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
+    return slidingAttacks(sq, occ, (1ULL << sq) ^ MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
+            ^ slidingAttacks(sq, occ, (1ULL << sq) ^ MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
 [[nodiscard]] std::uint64_t getFileMoves(std::uint32_t sq, std::uint64_t occ) {
@@ -350,7 +350,7 @@ void perft(Board &board, std::int32_t depth) {
 
         board.unmakeMove();
 
-        std::cout << moveToString(move, board.state.flags[0]) << "\t" << value << std::endl;
+        std::cout << moveToString(move, board.state.flags[0]) << ": " << value << std::endl;
     }
 
     std::cout << total << " nodes" << std::endl;
