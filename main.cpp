@@ -132,7 +132,7 @@ struct Board {
 
     [[nodiscard]] bool attackedByOpponent(std::uint32_t sq) const {
         const auto bb = 1ULL << sq;
-        return (((bb << 7) | (bb << 9)) & state.boards[0] & state.boards[7])                                                        // pawns
+        return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & state.boards[0] & state.boards[7])                                                        // pawns
             || (getKnightMoves(sq, 0) & state.boards[1] & state.boards[7])                                                          // knights
             || (getKingMoves(sq, 0) & state.boards[5] & state.boards[7])                                                            // kings
             || (getOrthogonalMoves(sq, state.boards[6] | state.boards[7]) & (state.boards[3] | state.boards[4]) & state.boards[7])  // rooks and queens
@@ -206,13 +206,13 @@ struct Board {
             if (!state.flags[1] && state.castlingRights[0][0] && !((state.boards[6] | state.boards[7]) & 96 /* f1 | g1 */)
                 // and F1 is not attacked
                 && !attackedByOpponent(5 /* f1 */))
-                *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 3
+                *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 2
 
             // if not in check, and we have short castling rights, and F1 and G1 are empty
             if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 14 /* b1 | c1 | d1 */)
                 // and D1 is not attacked
                 && !attackedByOpponent(3 /* d1 */))
-                *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 3
+                *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 2
         }
 
         generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6],
