@@ -318,7 +318,7 @@ struct Board {
 
         // !delete start
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
-            assert(pieceOn(move >> 4 & 63) < 6);
+            assert(state.pieceOn(move >> 4 & 63) < 6);
         // !delete end
 
         // remove captured piece
