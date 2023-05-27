@@ -4,6 +4,24 @@
 
 // !delete start
 #include <cassert>
+#include <cctype>
+#include <sstream>
+#include <vector>
+
+std::vector<std::string> split(const std::string &str, char delim) {
+    std::vector<std::string> result{};
+
+    std::istringstream stream{str};
+
+    for (std::string token{}; std::getline(stream, token, delim);) {
+        if (token.empty())
+            continue;
+
+        result.push_back(token);
+    }
+
+    return result;
+}
 // !delete end
 
 std::uint64_t MaskDiagonal[]{
@@ -96,6 +114,33 @@ std::uint64_t MaskAntiDiagonal[]{
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
+// !delete start
+[[nodiscard]] std::uint32_t pieceFromChar(char c) {
+    switch (c) {
+        case 'p':
+        case 'P':
+            return 0;
+        case 'n':
+        case 'N':
+            return 1;
+        case 'b':
+        case 'B':
+            return 2;
+        case 'r':
+        case 'R':
+            return 3;
+        case 'q':
+        case 'Q':
+            return 4;
+        case 'k':
+        case 'K':
+            return 5;
+        default:
+            return 6;
+    }
+}
+// !delete end
+
 [[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
     auto str = std::string{
         (char)('a' + (move >> 10 & 7)),
@@ -116,7 +161,42 @@ struct BoardState {
     // TODO castling rights might be smaller as a bitfield?
     bool castlingRights[2][2];  // [ours, theirs][short, long]
     std::uint32_t epSquare;
-    // TODO other board state
+    std::uint32_t halfmove;
+    // !delete start
+    std::uint32_t fullmove;
+    // !delete end
+
+    [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
+        return 6 * !((boards[6] | boards[7]) & (1ULL << sq))            // return 6 (no piece) if no piece is on that square
+             + 4 * !!((boards[4] | boards[5]) & (1ULL << sq))           // add 4 (0b100) if there is a queen or a king on that square, as they both have that bit set
+             + 2 * !!((boards[2] | boards[3]) & (1ULL << sq))           // same with 2 (0b010) for bishops and rooks
+             + !!((boards[1] | boards[3] | boards[5]) & (1ULL << sq));  // and 1 (0b001) for knights, rooks or kings
+    }
+
+    [[nodiscard]] bool attackedByOpponent(std::uint32_t sq) const {
+        const auto bb = 1ULL << sq;
+        return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & boards[0] & boards[7])  // pawns
+            || (getKnightMoves(sq, 0) & boards[1] & boards[7])                                                        // knights
+            || (getKingMoves(sq, 0) & boards[5] & boards[7])                                                          // kings
+            || (getOrthogonalMoves(sq, boards[6] | boards[7]) & (boards[3] | boards[4]) & boards[7])                  // rooks and queens
+            || (getDiagonalMoves(sq, boards[6] | boards[7]) & (boards[2] | boards[4]) & boards[7]);                   // bishops and queens
+    }
+
+    // !delete start
+    void setPiece(std::uint32_t sq, std::uint32_t piece, bool black) {
+        const auto bit = 1ULL << sq;
+        boards[piece] |= bit;
+        boards[black == flags[0] ? 6 : 7] |= bit;
+    }
+
+    void flip() {
+        for (auto &board : boards)
+            board = __builtin_bswap64(board);
+
+        std::swap(boards[6], boards[7]);
+        std::swap(castlingRights[0], castlingRights[1]);
+    }
+    // !delete end
 };
 
 struct Board {
@@ -125,22 +205,6 @@ struct Board {
 
     Board() {
         history.reserve(512);
-    }
-
-    [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
-        return 6 * !((state.boards[6] | state.boards[7]) & (1ULL << sq))                  // return 6 (no piece) if no piece is on that square
-             + 4 * !!((state.boards[4] | state.boards[5]) & (1ULL << sq))                 // add 4 (0b100) if there is a queen or a king on that square, as they both have that bit set
-             + 2 * !!((state.boards[2] | state.boards[3]) & (1ULL << sq))                 // same with 2 (0b010) for bishops and rooks
-             + !!((state.boards[1] | state.boards[3] | state.boards[5]) & (1ULL << sq));  // and 1 (0b001) for knights, rooks or kings
-    }
-
-    [[nodiscard]] bool attackedByOpponent(std::uint32_t sq) const {
-        const auto bb = 1ULL << sq;
-        return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & state.boards[0] & state.boards[7])    // pawns
-            || (getKnightMoves(sq, 0) & state.boards[1] & state.boards[7])                                                          // knights
-            || (getKingMoves(sq, 0) & state.boards[5] & state.boards[7])                                                            // kings
-            || (getOrthogonalMoves(sq, state.boards[6] | state.boards[7]) & (state.boards[3] | state.boards[4]) & state.boards[7])  // rooks and queens
-            || (getDiagonalMoves(sq, state.boards[6] | state.boards[7]) & (state.boards[2] | state.boards[4]) & state.boards[7]);   // bishops and queens
     }
 
     void generateFromGetter(std::uint16_t *&moves, std::uint64_t targets,
@@ -221,13 +285,13 @@ struct Board {
             // if not in check, and we have short castling rights, and F1 and G1 are empty
             if (!state.flags[1] && state.castlingRights[0][0] && !((state.boards[6] | state.boards[7]) & 96 /* f1 | g1 */)
                 // and F1 is not attacked
-                && !attackedByOpponent(5 /* f1 */))
+                && !state.attackedByOpponent(5 /* f1 */))
                 *(moves++) = 4194;  // (e1 << 10) | (g1 << 4) | 2
 
             // if not in check, and we have short castling rights, and F1 and G1 are empty
             if (!state.flags[1] && state.castlingRights[0][1] && !((state.boards[6] | state.boards[7]) & 14 /* b1 | c1 | d1 */)
                 // and D1 is not attacked
-                && !attackedByOpponent(3 /* d1 */))
+                && !state.attackedByOpponent(3 /* d1 */))
                 *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 2
         }
 
@@ -242,7 +306,7 @@ struct Board {
     }
 
     bool makeMove(std::uint16_t move) {
-        const auto piece = pieceOn(move >> 10);
+        const auto piece = state.pieceOn(move >> 10);
         // !delete start
         assert(piece < 6);
         assert(piece == 0 || ((move & 3) != 1 && (move & 3) != 3));  // ensure promos and en passants are a pawn moving
@@ -259,7 +323,7 @@ struct Board {
 
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
-            state.boards[pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
+            state.boards[state.pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
             state.boards[7] ^= 1ULL << (move >> 4 & 63);
         }
 
@@ -305,7 +369,7 @@ struct Board {
         // to square == a8
         state.castlingRights[1][1] &= (move & 1008) != 896;
 
-        if (attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6])))
+        if (state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6])))
             return true;
 
         state.flags[0] = !state.flags[0];
@@ -315,7 +379,7 @@ struct Board {
 
         std::swap(state.boards[6], state.boards[7]);
         std::swap(state.castlingRights[0], state.castlingRights[1]);
-        state.flags[1] = attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
 
         return false;
     }
@@ -328,6 +392,142 @@ struct Board {
         state = history.back();
         history.pop_back();
     }
+
+    // !delete start
+    void parseFen(const std::string &fen) {
+        const auto tokens = split(fen, ' ');
+
+        if (tokens.size() != 6) {
+            std::cerr << "invalid fen (" << (tokens.size() < 6 ? "not enough" : "too many") << " tokens)" << std::endl;
+            return;
+        }
+
+        const auto ranks = split(tokens[0], '/');
+
+        if (ranks.size() != 8) {
+            std::cerr << "invalid fen (" << (ranks.size() < 8 ? "not enough" : "too many") << " ranks)" << std::endl;
+            return;
+        }
+
+        BoardState newState{};
+
+        for (std::uint32_t rank = 0; rank < 8; ++rank) {
+            const auto &pieces = ranks[rank];
+
+            std::uint32_t file = 0;
+            for (const auto c : pieces) {
+                if (file >= 8) {
+                    std::cerr << "invalid fen (too many files in rank" << rank << ")" << std::endl;
+                    return;
+                }
+
+                if (c >= '0' && c <= '9')
+                    file += c - '0';
+                else if (const auto piece = pieceFromChar(c); c != 6) {
+                    newState.setPiece(((7 - rank) << 3) | file, piece, islower(c));
+                    ++file;
+                } else {
+                    std::cerr << "invalid fen (invalid piece '" << c << " in rank " << rank << ")" << std::endl;
+                    return;
+                }
+            }
+
+            if (file != 8) {
+                std::cerr << "invalid fen (" << (file < 8 ? "not enough" : "too many") << " files in rank" << rank << ")" << std::endl;
+                return;
+            }
+        }
+
+        if (tokens[1].length() != 1) {
+            std::cerr << "invalid fen (invalid side to move)" << std::endl;
+            return;
+        }
+
+        switch (tokens[1][0]) {
+            case 'b':
+                newState.flags[0] = true;
+                break;
+            case 'w':
+                break;
+            default:
+                std::cerr << "invalid fen (invalid side to move)" << std::endl;
+                return;
+        }
+
+        if (!newState.flags[0])
+            newState.flip();
+
+        if (newState.attackedByOpponent(__builtin_ctzll(newState.boards[5] & newState.boards[6]))) {
+            std::cerr << "invalid fen (opponent is in check)" << std::endl;
+            return;
+        }
+
+        if (!newState.flags[0])
+            newState.flip();
+
+        if (tokens[2].length() > 4) {
+            std::cerr << "invalid fen (too many castling rights)" << std::endl;
+            return;
+        }
+
+        if (tokens[2].length() > 1 || tokens[2][0] != '-') {
+            for (const char flag : tokens[2]) {
+                switch (flag) {
+                    case 'K':
+                        newState.castlingRights[0][0] = true;
+                        break;
+                    case 'k':
+                        newState.castlingRights[1][0] = true;
+                        break;
+                    case 'Q':
+                        newState.castlingRights[0][1] = true;
+                        break;
+                    case 'q':
+                        newState.castlingRights[1][1] = true;
+                        break;
+                    default:
+                        std::cerr << "invalid fen (invalid castling rights flag ' << " << flag << "')" << std::endl;
+                        return;
+                }
+            }
+        }
+
+        if (tokens[3] != "-") {
+            if (tokens[3].length() != 2
+                || tokens[3][0] < 'a' || tokens[3][0] > 'h'
+                || tokens[3][1] < '1' || tokens[3][1] > '8'
+                || tokens[3][1] != (newState.flags[0] ? '3' : '6')) {
+                std::cerr << "invalid fen (invalid en passant square)" << std::endl;
+                return;
+            }
+
+            // pre-flip, always set as if black just moved
+            newState.epSquare = (5 << 3) | (tokens[3][0] - 'a');
+        }
+
+        try {
+            newState.halfmove = std::stoul(tokens[4]);
+        } catch (...) {
+            std::cerr << "invalid fen (invalid halfmove clock)" << std::endl;
+            return;
+        }
+
+        try {
+            newState.fullmove = std::stoul(tokens[5]);
+        } catch (...) {
+            std::cerr << "invalid fen (invalid fullmove number)" << std::endl;
+            return;
+        }
+
+        history.clear();
+
+        state = newState;
+        if (state.flags[0])
+            state.flip();
+
+        state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+    }
+    // !delete end
 };
 
 // !delete start
@@ -384,7 +584,7 @@ int main() {
     // !delete start
     Board board{};
 
-    // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+    // startpos
     board.state.boards[0] = 0x00FF00000000FF00ULL;
     board.state.boards[1] = 0x4200000000000042ULL;
     board.state.boards[2] = 0x2400000000000024ULL;
@@ -401,6 +601,6 @@ int main() {
 
     board.state.epSquare = 64;
 
-    perft(board, 7);
+    perft(board, 5);
     // !delete end
 }
