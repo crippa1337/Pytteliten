@@ -193,8 +193,8 @@ def minify(content: str):
     tokens = group_tokens(tokens, ['#', 'include'], ['\n'])  # Includes
 
     # Deletion regions
-    tokens = group_tokens(tokens, ['/', '/', ' ', '!', 'delete', ' ', 'start'],
-                          ['/', '/', ' ', '!', 'delete', ' ', 'end'])
+    tokens = group_tokens(tokens, ['/', '/', ' ', 'minify', ' ', 'enable', ' ', 'filter', ' ', 'delete'],
+                          ['/', '/', ' ', 'minify', ' ', 'disable', ' ', 'filter', ' ', 'delete'])
 
     tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
 
