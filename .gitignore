@@ -1,2 +1,5 @@
-/cmake-build-debug
-.idea
+/cmake-build-*
+/.idea
+/pytteliten.cpp
+/*.exe
+/*.out
