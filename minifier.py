@@ -183,56 +183,18 @@ assert group_tokens(["a", "b", "c", "d"], ["e"], [
     "c"]) == ["a", "b", "c", "d"]
 
 
-def find_directives(content: str) -> list:
-    directives = []
-
-    # Split by newlines, this will make each element
-    # a possible directive.
-    for line in content.split('\n'):
-        # ... is it a directive?
-        if line.startswith('#'):
-            # ... if so, add it to the list of directives
-            directives.append(line)
-            # ... and remove it from the content
-            content = content.replace(line, '')
-
-    # Returning the directives for themselves and the now 'cleaned' content.
-    return directives, content
-
-
-def write_minification(directives: list, content: str) -> str:
-    """Writes the minified code."""
-    minified = ''
-
-    # We've gotten all the directives, so we write them
-    # to the top of the file first.
-    for d in directives:
-        # Remove unnecessary whitespace
-        d = d.replace(' ', '')
-        minified += d + '\n'
-
-    # ... add on the rest of the content as a single line afterwards.
-    minified += content
-
-    with open('pytteliten.cpp', 'w') as f:
-        f.write(minified)
-
-
 def minify(content: str):
-    # Step 1. Remove any preprocessor directives and save them in a list for later use
-    directives, content = find_directives(content)
-
-    # Step 2. Fetch all the tokens
     tokens = fetch_tokens(content)
 
-    # Step 3. Create token groups such as comments, strings, etc.
+    # Create token groups such as comments, strings, etc.
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
     tokens = group_tokens(tokens, ['[', '['], [']', ']'])    # Attributes
+    tokens = group_tokens(tokens, ['#', 'include'], ['\n'])  # Includes
 
     # Deletion regions
-    tokens = group_tokens(tokens, ['/', '/', ' ', '!', 'delete', ' ', 'start'],
-                          ['/', '/', ' ', '!', 'delete', ' ', 'end'])
+    tokens = group_tokens(tokens, ['/', '/', ' ', 'minify', ' ', 'enable', ' ', 'filter', ' ', 'delete'],
+                          ['/', '/', ' ', 'minify', ' ', 'disable', ' ', 'filter', ' ', 'delete'])
 
     tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
 
@@ -247,7 +209,7 @@ def minify(content: str):
         names[kw] = kw
 
     for token in tokens:
-        # Step 4. Remove any of the following:
+        # # Remove any of the following:
         # Line comments and deletion regions
         if token.startswith('//'):
             continue
@@ -258,27 +220,28 @@ def minify(content: str):
         elif token.startswith('[['):
             continue
 
-        # Step 5. Remove newlines
+        # Remove newlines
         if token == '\n':
             continue
 
-        # Step 6. Remove alone whitespace
+        # Remove alone whitespace
         if token.isspace():
             continue
 
-        # Step 7. Add a seperator between tokens that can't be attached to each other.
+        # Add a seperator between tokens that can't be attached to each other.
         # For example: Two names (int main)
         if prev and not attachable_tokens(prev, token):
             new_tokens.append(' ')
 
-        # Step 8. If the token is a name, but not a keyword, we mangle it.
+        # If the token is a name, but not a keyword, we mangle it.
         if renamable(token):
             token = generate_name(token)
 
         prev = token
         new_tokens.append(token)
 
-    write_minification(directives, ''.join(new_tokens))
+    with open('pytteliten.cpp', 'w') as f:
+        f.write(''.join(new_tokens))
 
 
 if __name__ == '__main__':
