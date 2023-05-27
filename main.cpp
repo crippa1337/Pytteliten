@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cctype>
 #include <sstream>
-#include <vector>
 
 std::vector<std::string> split(const std::string &str, char delim) {
     std::vector<std::string> result{};
@@ -318,7 +317,7 @@ struct Board {
 
         // minify enable filter delete
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
-            assert(pieceOn(move >> 4 & 63) < 6);
+            assert(state.pieceOn(move >> 4 & 63) < 6);
         // minify disable filter delete
 
         // remove captured piece
