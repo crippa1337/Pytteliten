@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-// !delete start
+// minify enable filter delete
 #include <cassert>
 #include <cctype>
 #include <sstream>
@@ -21,7 +21,7 @@ std::vector<std::string> split(const std::string &str, char delim) {
 
     return result;
 }
-// !delete end
+// minify disable filter delete
 
 std::uint64_t MaskDiagonal[]{
     0x80,
@@ -113,7 +113,7 @@ std::uint64_t MaskAntiDiagonal[]{
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
-// !delete start
+// minify enable filter delete
 [[nodiscard]] std::uint32_t pieceFromChar(char c) {
     switch (c) {
         case 'p':
@@ -138,7 +138,7 @@ std::uint64_t MaskAntiDiagonal[]{
             return 6;
     }
 }
-// !delete end
+// minify disable filter delete
 
 [[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
     auto str = std::string{
@@ -161,9 +161,9 @@ struct BoardState {
     bool castlingRights[2][2];  // [ours, theirs][short, long]
     std::uint32_t epSquare;
     std::uint32_t halfmove;
-    // !delete start
+    // minify enable filter delete
     std::uint32_t fullmove;
-    // !delete end
+    // minify disable filter delete
 
     [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
         return 6 * !((boards[6] | boards[7]) & (1ULL << sq))            // return 6 (no piece) if no piece is on that square
@@ -181,7 +181,7 @@ struct BoardState {
             || (getDiagonalMoves(sq, boards[6] | boards[7]) & (boards[2] | boards[4]) & boards[7]);                   // bishops and queens
     }
 
-    // !delete start
+    // minify enable filter delete
     void setPiece(std::uint32_t sq, std::uint32_t piece, bool black) {
         const auto bit = 1ULL << sq;
         boards[piece] |= bit;
@@ -195,7 +195,7 @@ struct BoardState {
         std::swap(boards[6], boards[7]);
         std::swap(castlingRights[0], castlingRights[1]);
     }
-    // !delete end
+    // minify disable filter delete
 };
 
 struct Board {
@@ -230,10 +230,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 2) + 1 == 13
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 2) + 1 == 1
-                    // !delete start
+                    // minify enable filter delete
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 9;  //   rook promo = (2 << 2) + 1 == 9
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 5;  // bishop promo = (1 << 2) + 1 == 5
-                    // !delete end
+                    // minify disable filter delete
                 } else
                     *(moves++) = ((to - 7) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -248,10 +248,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 1;
-                    // !delete start
+                    // minify enable filter delete
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 9;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 5;
-                    // !delete end
+                    // minify disable filter delete
                 } else
                     *(moves++) = ((to - 9) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -273,10 +273,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 1;
-                    // !delete start
+                    // minify enable filter delete
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 9;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 5;
-                    // !delete end
+                    // minify disable filter delete
                 } else
                     *(moves++) = ((to - 8) << 10) | (to << 4);
             }
@@ -306,19 +306,19 @@ struct Board {
 
     bool makeMove(std::uint16_t move) {
         const auto piece = state.pieceOn(move >> 10);
-        // !delete start
+        // minify enable filter delete
         assert(piece < 6);
         assert(piece == 0 || ((move & 3) != 1 && (move & 3) != 3));  // ensure promos and en passants are a pawn moving
         assert(piece == 5 || (move & 3) != 2);                       // ensure castling moves are a king moving
         assert((move >> 10) != (move >> 4 & 63));                    // ensure from != to
-        // !delete end
+        // minify disable filter delete
 
         history.push_back(state);
 
-        // !delete start
+        // minify enable filter delete
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(state.pieceOn(move >> 4 & 63) < 6);
-        // !delete end
+        // minify disable filter delete
 
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
@@ -384,15 +384,15 @@ struct Board {
     }
 
     void unmakeMove() {
-        // !delete start
+        // minify enable filter delete
         assert(!history.empty());
-        // !delete end
+        // minify disable filter delete
 
         state = history.back();
         history.pop_back();
     }
 
-    // !delete start
+    // minify enable filter delete
     void parseFen(const std::string &fen) {
         const auto tokens = split(fen, ' ');
 
@@ -526,10 +526,10 @@ struct Board {
 
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
     }
-    // !delete end
+    // minify disable filter delete
 };
 
-// !delete start
+// minify enable filter delete
 std::size_t doPerft(Board &board, std::int32_t depth) {
     if (depth == 0)
         return 1;
@@ -577,10 +577,10 @@ void perft(Board &board, std::int32_t depth) {
 
     std::cout << total << " nodes" << std::endl;
 }
-// !delete end
+// minify disable filter delete
 
 int main() {
-    // !delete start
+    // minify enable filter delete
     Board board{};
 
     // startpos
@@ -601,5 +601,5 @@ int main() {
     board.state.epSquare = 64;
 
     perft(board, 5);
-    // !delete end
+    // minify disable filter delete
 }
