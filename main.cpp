@@ -153,6 +153,10 @@ std::uint64_t MaskAntiDiagonal[]{
     return str;
 }
 
+std::uint16_t stringToMove(std::string move) {
+    return (move[0] - 'a') | (move[1] - '1' << 3) | (move[2] - 'a' << 6) | (move[3] - '1' << 9);  // | move.length() == 5 ?
+}
+
 struct BoardState {
     // pnbrqk ours theirs
     std::uint64_t boards[8];
@@ -580,26 +584,39 @@ void perft(Board &board, std::int32_t depth) {
 // minify disable filter delete
 
 int main() {
-    // minify enable filter delete
+    std::cout << stringToMove("a1a1") << std::endl;
+    assert(0 == stringToMove("a1a1"));
+
     Board board{};
+    std::string line;
 
-    // startpos
-    board.state.boards[0] = 0x00FF00000000FF00ULL;
-    board.state.boards[1] = 0x4200000000000042ULL;
-    board.state.boards[2] = 0x2400000000000024ULL;
-    board.state.boards[3] = 0x8100000000000081ULL;
-    board.state.boards[4] = 0x0800000000000008ULL;
-    board.state.boards[5] = 0x1000000000000010ULL;
-    board.state.boards[6] = 0x000000000000FFFFULL;
-    board.state.boards[7] = 0xFFFF000000000000ULL;
+    while (std::getline(std::cin, line)) {
+        const auto tokens = split(line, ' ');
 
-    board.state.castlingRights[0][0] = true;
-    board.state.castlingRights[0][1] = true;
-    board.state.castlingRights[1][0] = true;
-    board.state.castlingRights[1][1] = true;
+        if (tokens[0] == "quit")
+            break;
+        else if (tokens[0] == "uci") {
+            std::cout << "id name Pytteliten 0.1\nid author Crippa" << std::endl;
+        } else if (tokens[0] == "isready")
+            std::cout << "readyok" << std::endl;
+        else if (tokens[0] == "ucinewgame")
+            board = Board{};
+        else if (tokens[0] == "position") {
+            if (tokens[1] == "startpos")
+                board = Board{};
+            // minifier enable filter delete
+            else if (tokens[1] == "fen") {
+                std::string fen;
+                for (auto i = 2; i < 8; i++)
+                    fen += tokens[i] + " ";
+                // trailing whitespace
+                fen.pop_back();
+                board.parseFen(fen);
+            }
+            // minifier disable filter delete
 
-    board.state.epSquare = 64;
-
-    perft(board, 5);
-    // minify disable filter delete
+            if (tokens[3] == "moves") {
+            }
+        }
+    }
 }
