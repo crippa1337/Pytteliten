@@ -622,10 +622,10 @@ int main() {
         } else if (tokens[0] == "isready")
             std::cout << "readyok" << std::endl;
         else if (tokens[0] == "ucinewgame")
-            board = Board::fromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            board.parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         else if (tokens[0] == "position") {
             // assume that the second token is 'startpos'
-            board = Board::fromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            board.parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
             // minifier enable filter delete
             if (tokens[1] == "fen") {
