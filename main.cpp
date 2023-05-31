@@ -3,6 +3,7 @@
 #include <vector>
 
 // minify enable filter delete
+#include <bitset>
 #include <cassert>
 #include <cctype>
 #include <sstream>
@@ -153,10 +154,6 @@ std::uint64_t MaskAntiDiagonal[]{
     return str;
 }
 
-std::uint16_t stringToMove(std::string move) {
-    return (move[0] - 'a') | (move[1] - '1' << 3) | (move[2] - 'a' << 6) | (move[3] - '1' << 9);  // | move.length() == 5 ?
-}
-
 struct BoardState {
     // pnbrqk ours theirs
     std::uint64_t boards[8];
@@ -167,6 +164,7 @@ struct BoardState {
     std::uint32_t halfmove;
     // minify enable filter delete
     std::uint32_t fullmove;
+    bool operator==(const BoardState &) const = default;
     // minify disable filter delete
 
     [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
@@ -201,6 +199,27 @@ struct BoardState {
     }
     // minify disable filter delete
 };
+
+std::uint16_t stringToMove(std::string move, BoardState board) {
+    std::uint8_t from = move[0] - 'a' | (move[1] - '1' << 3);
+    std::uint8_t to = move[2] - 'a' | (move[3] - '1' << 3);
+
+    // castling
+    if (board
+                .pieceOn(from)
+            == 5
+        && std::abs(from - to) == 2) {
+        return from << 10 | to << 4 | 2;
+    }
+
+    // promotion
+    if (move.length() == 5) {
+        return from << 10 | to << 4 | 1 << 2 | (pieceFromChar(move[4]) - 1);
+    }
+
+    // normal move
+    return from << 10 | to << 4;
+}
 
 struct Board {
     BoardState state{};
@@ -531,6 +550,12 @@ struct Board {
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
     }
     // minify disable filter delete
+
+    [[nodiscard]] static Board fromFen(const std::string &fen) {
+        Board board{};
+        board.parseFen(fen);
+        return board;
+    }
 };
 
 // minify enable filter delete
@@ -584,10 +609,10 @@ void perft(Board &board, std::int32_t depth) {
 // minify disable filter delete
 
 int main() {
-    std::cout << stringToMove("a1a1") << std::endl;
-    assert(0 == stringToMove("a1a1"));
-
     Board board{};
+    Board fenTest = Board::fromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    fenTest.makeMove(stringToMove("e2e4", fenTest.state));
+
     std::string line;
 
     while (std::getline(std::cin, line)) {
@@ -602,20 +627,39 @@ int main() {
         else if (tokens[0] == "ucinewgame")
             board = Board{};
         else if (tokens[0] == "position") {
-            if (tokens[1] == "startpos")
-                board = Board{};
+            // assume that the second token is 'startpos'
+            board = Board::fromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
             // minifier enable filter delete
-            else if (tokens[1] == "fen") {
+            if (tokens[1] == "fen") {
                 std::string fen;
+
+                // concatenate the fen back together
                 for (auto i = 2; i < 8; i++)
                     fen += tokens[i] + " ";
-                // trailing whitespace
-                fen.pop_back();
+
                 board.parseFen(fen);
+
+                auto moves = std::find(tokens.begin(), tokens.end(), "moves");
+
+                if (moves != tokens.end()) {
+                    for (moves++; moves != tokens.end(); moves++) {
+                        const auto move = stringToMove(*moves, board.state);
+                        board.makeMove(move);
+                    }
+                }
+
+                continue;
             }
             // minifier disable filter delete
 
-            if (tokens[3] == "moves") {
+            if (tokens.size() > 2) {
+                // assume that the third token is 'moves'
+                for (auto i = 3; i < tokens.size(); i++) {
+                    std::cout << tokens[i] << std::endl;
+                    const auto move = stringToMove(tokens[i], board.state);
+                    board.makeMove(move);
+                }
             }
         }
     }
