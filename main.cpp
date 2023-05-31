@@ -3,7 +3,6 @@
 #include <vector>
 
 // minify enable filter delete
-#include <bitset>
 #include <cassert>
 #include <cctype>
 #include <sstream>
