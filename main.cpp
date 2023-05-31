@@ -548,13 +548,13 @@ struct Board {
 
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
     }
-    // minify disable filter delete
 
     [[nodiscard]] static Board fromFen(const std::string &fen) {
         Board board{};
         board.parseFen(fen);
         return board;
     }
+    // minify disable filter delete
 };
 
 // minify enable filter delete
