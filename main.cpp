@@ -6,6 +6,7 @@
 // minify enable filter delete
 #include <cassert>
 #include <cctype>
+// minify disable filter delete
 
 std::vector<std::string> split(const std::string &str, char delim) {
     std::vector<std::string> result{};
@@ -21,7 +22,6 @@ std::vector<std::string> split(const std::string &str, char delim) {
 
     return result;
 }
-// minify disable filter delete
 
 std::uint64_t MaskDiagonal[]{
     0x80,
@@ -113,7 +113,6 @@ std::uint64_t MaskAntiDiagonal[]{
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
-// minify enable filter delete
 [[nodiscard]] std::uint32_t pieceFromChar(char c) {
     switch (c) {
         case 'p':
@@ -138,7 +137,6 @@ std::uint64_t MaskAntiDiagonal[]{
             return 6;
     }
 }
-// minify disable filter delete
 
 [[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
     auto str = std::string{
@@ -661,7 +659,6 @@ int main() {
             if (tokens.size() > 2) {
                 // assume that the third token is 'moves'
                 for (auto i = 3; i < tokens.size(); i++) {
-                    std::cout << tokens[i] << std::endl;
                     const auto move = stringToMove(tokens[i], board.state);
                     board.makeMove(move);
                 }

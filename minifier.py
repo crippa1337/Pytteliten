@@ -9,7 +9,10 @@ import re
 names = dict()
 KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint16_t', 'uint32_t', 'uint64_t', 'vector',
             'push_back', 'back', 'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'auto',
-            'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void', 'string', 'char', 'abs', 'getline', 'split', 'break', 'length']
+            'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void', 'string', 'char', 'abs',
+            'getline', 'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
+            'default']
+
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -197,6 +200,7 @@ def minify(content: str):
                           ['/', '/', ' ', 'minify', ' ', 'disable', ' ', 'filter', ' ', 'delete'])
 
     tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
+    tokens = group_tokens(tokens, ["'"], ["'"])               # Chars
 
     new_tokens = []
     prev = None
