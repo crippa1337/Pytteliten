@@ -1,11 +1,12 @@
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 // minify enable filter delete
 #include <cassert>
 #include <cctype>
-#include <sstream>
+// minify disable filter delete
 
 std::vector<std::string> split(const std::string &str, char delim) {
     std::vector<std::string> result{};
@@ -21,7 +22,6 @@ std::vector<std::string> split(const std::string &str, char delim) {
 
     return result;
 }
-// minify disable filter delete
 
 std::uint64_t MaskDiagonal[]{
     0x80,
@@ -113,7 +113,6 @@ std::uint64_t MaskAntiDiagonal[]{
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
-// minify enable filter delete
 [[nodiscard]] std::uint32_t pieceFromChar(char c) {
     switch (c) {
         case 'p':
@@ -138,7 +137,6 @@ std::uint64_t MaskAntiDiagonal[]{
             return 6;
     }
 }
-// minify disable filter delete
 
 [[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
     auto str = std::string{
@@ -155,14 +153,23 @@ std::uint64_t MaskAntiDiagonal[]{
 
 struct BoardState {
     // pnbrqk ours theirs
-    std::uint64_t boards[8];
-    bool flags[2];  // black to move, in check
+    std::uint64_t boards[8] = {
+        0xff00000000ff00,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x800000000000008,
+        0x1000000000000010,
+        0xffff,
+        0xffff000000000000};
+    bool flags[2] = {false, false};  // black to move, in check
     // TODO castling rights might be smaller as a bitfield?
-    bool castlingRights[2][2];  // [ours, theirs][short, long]
-    std::uint32_t epSquare;
-    std::uint32_t halfmove;
+    bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
+    std::uint32_t epSquare = 0;
+    std::uint32_t halfmove = 0;
     // minify enable filter delete
-    std::uint32_t fullmove;
+    std::uint32_t fullmove = 1;
+    bool operator==(const BoardState &) const;
     // minify disable filter delete
 
     [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
@@ -197,6 +204,27 @@ struct BoardState {
     }
     // minify disable filter delete
 };
+
+std::uint16_t stringToMove(std::string move, BoardState board) {
+    std::uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
+    std::uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
+
+    // castling
+    if (board
+                .pieceOn(from)
+            == 5
+        && std::abs(from - to) == 2) {
+        return from << 10 | to << 4 | 2;
+    }
+
+    // promotion
+    if (move.length() == 5) {
+        return from << 10 | to << 4 | 1 << 2 | (pieceFromChar(move[4]) - 1);
+    }
+
+    // normal move
+    return from << 10 | to << 4;
+}
 
 struct Board {
     BoardState state{};
@@ -409,6 +437,8 @@ struct Board {
         }
 
         BoardState newState{};
+        for (auto &board : newState.boards)
+            board = 0;
 
         for (std::uint32_t rank = 0; rank < 8; ++rank) {
             const auto &pieces = ranks[rank];
@@ -526,6 +556,12 @@ struct Board {
 
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
     }
+
+    [[nodiscard]] static Board fromFen(const std::string &fen) {
+        Board board{};
+        board.parseFen(fen);
+        return board;
+    }
     // minify disable filter delete
 };
 
@@ -580,26 +616,53 @@ void perft(Board &board, std::int32_t depth) {
 // minify disable filter delete
 
 int main() {
-    // minify enable filter delete
     Board board{};
+    std::string line;
 
-    // startpos
-    board.state.boards[0] = 0x00FF00000000FF00ULL;
-    board.state.boards[1] = 0x4200000000000042ULL;
-    board.state.boards[2] = 0x2400000000000024ULL;
-    board.state.boards[3] = 0x8100000000000081ULL;
-    board.state.boards[4] = 0x0800000000000008ULL;
-    board.state.boards[5] = 0x1000000000000010ULL;
-    board.state.boards[6] = 0x000000000000FFFFULL;
-    board.state.boards[7] = 0xFFFF000000000000ULL;
+    while (std::getline(std::cin, line)) {
+        const auto tokens = split(line, ' ');
 
-    board.state.castlingRights[0][0] = true;
-    board.state.castlingRights[0][1] = true;
-    board.state.castlingRights[1][0] = true;
-    board.state.castlingRights[1][1] = true;
+        if (tokens[0] == "quit")
+            break;
+        else if (tokens[0] == "uci") {
+            std::cout << "id name Pytteliten 0.1\nid author Crippa" << std::endl;
+        } else if (tokens[0] == "isready")
+            std::cout << "readyok" << std::endl;
+        // else if (tokens[0] == "ucinewgame")
+        else if (tokens[0] == "position") {
+            // assume that the second token is 'startpos'
+            board = Board{};
 
-    board.state.epSquare = 64;
+            // minify enable filter delete
+            if (tokens[1] == "fen") {
+                std::string fen;
 
-    perft(board, 5);
-    // minify disable filter delete
+                // concatenate the fen back together
+                for (auto i = 2; i < 8; i++)
+                    fen += tokens[i] + " ";
+
+                board.parseFen(fen);
+
+                auto moves = std::find(tokens.begin(), tokens.end(), "moves");
+
+                if (moves != tokens.end()) {
+                    for (moves++; moves != tokens.end(); moves++) {
+                        const auto move = stringToMove(*moves, board.state);
+                        board.makeMove(move);
+                    }
+                }
+
+                continue;
+            }
+            // minify disable filter delete
+
+            if (tokens.size() > 2) {
+                // assume that the third token is 'moves'
+                for (auto i = 3; i < tokens.size(); i++) {
+                    const auto move = stringToMove(tokens[i], board.state);
+                    board.makeMove(move);
+                }
+            }
+        }
+    }
 }
