@@ -1,11 +1,11 @@
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 // minify enable filter delete
 #include <cassert>
 #include <cctype>
-#include <sstream>
 
 std::vector<std::string> split(const std::string &str, char delim) {
     std::vector<std::string> result{};
@@ -171,7 +171,7 @@ struct BoardState {
     std::uint32_t halfmove = 0;
     // minify enable filter delete
     std::uint32_t fullmove = 1;
-    bool operator==(const BoardState &) const = default;
+    bool operator==(const BoardState &) const;
     // minify disable filter delete
 
     [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
@@ -208,8 +208,8 @@ struct BoardState {
 };
 
 std::uint16_t stringToMove(std::string move, BoardState board) {
-    std::uint8_t from = move[0] - 'a' | (move[1] - '1' << 3);
-    std::uint8_t to = move[2] - 'a' | (move[3] - '1' << 3);
+    std::uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
+    std::uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
 
     // castling
     if (board
@@ -635,7 +635,7 @@ int main() {
             // assume that the second token is 'startpos'
             board = Board{};
 
-            // minifier enable filter delete
+            // minify enable filter delete
             if (tokens[1] == "fen") {
                 std::string fen;
 
@@ -656,7 +656,7 @@ int main() {
 
                 continue;
             }
-            // minifier disable filter delete
+            // minify disable filter delete
 
             if (tokens.size() > 2) {
                 // assume that the third token is 'moves'
