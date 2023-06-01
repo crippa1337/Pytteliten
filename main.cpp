@@ -155,14 +155,22 @@ std::uint64_t MaskAntiDiagonal[]{
 
 struct BoardState {
     // pnbrqk ours theirs
-    std::uint64_t boards[8];
-    bool flags[2];  // black to move, in check
+    std::uint64_t boards[8] = {
+        0xff00000000ff00,
+        0x4200000000000042,
+        0x2400000000000024,
+        0x8100000000000081,
+        0x800000000000008,
+        0x1000000000000010,
+        0xffff,
+        0xffff000000000000};
+    bool flags[2] = {false, false};  // black to move, in check
     // TODO castling rights might be smaller as a bitfield?
-    bool castlingRights[2][2];  // [ours, theirs][short, long]
-    std::uint32_t epSquare;
-    std::uint32_t halfmove;
+    bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
+    std::uint32_t epSquare = 0;
+    std::uint32_t halfmove = 0;
     // minify enable filter delete
-    std::uint32_t fullmove;
+    std::uint32_t fullmove = 1;
     bool operator==(const BoardState &) const = default;
     // minify disable filter delete
 
@@ -431,6 +439,8 @@ struct Board {
         }
 
         BoardState newState{};
+        for (auto &board : newState.boards)
+            board = 0;
 
         for (std::uint32_t rank = 0; rank < 8; ++rank) {
             const auto &pieces = ranks[rank];
@@ -608,8 +618,7 @@ void perft(Board &board, std::int32_t depth) {
 // minify disable filter delete
 
 int main() {
-    Board board;
-
+    Board board{};
     std::string line;
 
     while (std::getline(std::cin, line)) {
@@ -621,11 +630,10 @@ int main() {
             std::cout << "id name Pytteliten 0.1\nid author Crippa" << std::endl;
         } else if (tokens[0] == "isready")
             std::cout << "readyok" << std::endl;
-        else if (tokens[0] == "ucinewgame")
-            board.parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        // else if (tokens[0] == "ucinewgame")
         else if (tokens[0] == "position") {
             // assume that the second token is 'startpos'
-            board.parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            board = Board{};
 
             // minifier enable filter delete
             if (tokens[1] == "fen") {
