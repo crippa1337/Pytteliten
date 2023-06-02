@@ -244,7 +244,7 @@ def minify(content: str):
         prev = token
         new_tokens.append(token)
 
-    with open('pytteliten.cpp', 'w') as f:
+    with open('pytteliten-mini.cpp', 'w') as f:
         f.write(''.join(new_tokens))
 
 
