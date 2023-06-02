@@ -1,4 +1,4 @@
-// Size: 1939 Bytes
+// Size: 2200 Bytes
 
 #include <iostream>
 #include <sstream>
@@ -566,6 +566,14 @@ struct Board {
         return board;
     }
     // minify disable filter delete
+
+    int32_t evaluateColor(bool color) {
+        return __builtin_popcountll(state.boards[0] & state.boards[6 + color]) * 100 + __builtin_popcountll(state.boards[1] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[2] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[3] & state.boards[6 + color]) * 500 + __builtin_popcountll(state.boards[4] & state.boards[6 + color]) * 900;
+    }
+
+    int32_t evaluate() {
+        return evaluateColor(false) - evaluateColor(true);
+    }
 };
 
 // minify enable filter delete
@@ -618,6 +626,54 @@ void perft(Board &board, int32_t depth) {
 }
 // minify disable filter delete
 
+struct SearchResults {
+    uint16_t bestMove = 0;
+};
+
+int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchResults) {
+    if (depth == 0) {
+        return board.evaluate();
+    }
+
+    uint16_t moves[256] = {0};
+    board.generateMoves(moves, false);
+
+    int32_t bestScore = -32000;
+
+    size_t i = 0;
+    while (const auto move = moves[i++]) {
+        if (board.makeMove(move)) {
+            board.unmakeMove();
+            continue;
+        }
+
+        const int32_t value = -negamax(board, depth - 1, ply + 1, searchResults);
+
+        board.unmakeMove();
+
+        if (value > bestScore) {
+            bestScore = value;
+            if (ply == 0) searchResults.bestMove = move;
+        }
+    }
+
+    return bestScore;
+}
+
+void searchRoot(Board &board) {
+    SearchResults searchResults{};
+
+    int32_t depth = 3;
+
+    auto value = negamax(board, depth, 0, searchResults);
+
+    // minify enable filter delete
+    cout << "info depth " << depth << " score cp " << value << " pv " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
+    // minify disable filter delete
+
+    cout << "bestmove " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
+}
+
 int main() {
     Board board{};
     string line;
@@ -666,6 +722,8 @@ int main() {
                     board.makeMove(move);
                 }
             }
+        } else if (tokens[0] == "go") {
+            searchRoot(board);
         }
     }
 }
