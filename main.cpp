@@ -1,3 +1,5 @@
+// Size: 1939 Bytes
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -7,8 +9,6 @@
 #include <cassert>
 #include <cctype>
 // minify disable filter delete
-
-// Size: 1939 Bytes
 
 using namespace std;
 vector<string> split(const string &str, char delim) {

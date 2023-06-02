@@ -1,6 +1,6 @@
 name: Pytteliten Size Checker
 run-name: ${{ github.actor }} is checking the size of pytteliten
-on: [push]
+on: [push, pull_request]
 jobs:
   PL-Size-Checker:
     runs-on: ubuntu-latest
