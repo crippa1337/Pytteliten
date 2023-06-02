@@ -8,12 +8,15 @@
 #include <cctype>
 // minify disable filter delete
 
-std::vector<std::string> split(const std::string &str, char delim) {
-    std::vector<std::string> result{};
+// Size: 1939 Bytes
 
-    std::istringstream stream{str};
+using namespace std;
+vector<string> split(const string &str, char delim) {
+    vector<string> result{};
 
-    for (std::string token{}; std::getline(stream, token, delim);) {
+    istringstream stream{str};
+
+    for (string token{}; getline(stream, token, delim);) {
         if (token.empty())
             continue;
 
@@ -23,7 +26,7 @@ std::vector<std::string> split(const std::string &str, char delim) {
     return result;
 }
 
-std::uint64_t MaskDiagonal[]{
+uint64_t MaskDiagonal[]{
     0x80,
     0x8040,
     0x804020,
@@ -41,7 +44,7 @@ std::uint64_t MaskDiagonal[]{
     0x100000000000000,
 };
 
-std::uint64_t MaskAntiDiagonal[]{
+uint64_t MaskAntiDiagonal[]{
     0x1,
     0x102,
     0x10204,
@@ -59,22 +62,22 @@ std::uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
-[[nodiscard]] std::uint64_t slidingAttacks(std::uint32_t square, std::uint64_t occ, std::uint64_t mask) {
+[[nodiscard]] uint64_t slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
          & mask;
 }
 
-[[nodiscard]] std::uint64_t getDiagonalMoves(std::uint32_t sq, std::uint64_t occ) {
+[[nodiscard]] uint64_t getDiagonalMoves(uint32_t sq, uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
          ^ slidingAttacks(sq, occ, (1ULL << sq) ^ MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
-[[nodiscard]] std::uint64_t getFileMoves(std::uint32_t sq, std::uint64_t occ) {
+[[nodiscard]] uint64_t getFileMoves(uint32_t sq, uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ 0x101010101010101 << (sq & 7));
 }
 
-[[nodiscard]] std::uint64_t getOrthogonalMoves(std::uint32_t sq, std::uint64_t occ) {
+[[nodiscard]] uint64_t getOrthogonalMoves(uint32_t sq, uint64_t occ) {
     return getFileMoves(sq, occ)
          | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
                                              & 0x0101010101010101)
@@ -84,7 +87,7 @@ std::uint64_t MaskAntiDiagonal[]{
             << (sq - (sq & 7)));
 }
 
-[[nodiscard]] std::uint64_t getKingMoves(std::uint32_t sq, std::uint64_t) {
+[[nodiscard]] uint64_t getKingMoves(uint32_t sq, uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
     return asBb << 8 | asBb >> 8
@@ -94,7 +97,7 @@ std::uint64_t MaskAntiDiagonal[]{
          | (asBb >> 9 | asBb << 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
-[[nodiscard]] std::uint64_t getKnightMoves(std::uint32_t sq, std::uint64_t) {
+[[nodiscard]] uint64_t getKnightMoves(uint32_t sq, uint64_t) {
     const auto asBb = 1ULL << sq;
     return (asBb << 15 | asBb >> 17) & 0x7F7F7F7F7F7F7F7FULL | (asBb << 17 | asBb >> 15) & 0xFEFEFEFEFEFEFEFEULL
          | (asBb << 10 | asBb >> 6) & 0xFCFCFCFCFCFCFCFCULL | (asBb << 6 | asBb >> 10) & 0x3F3F3F3F3F3F3F3FULL;
@@ -113,7 +116,7 @@ std::uint64_t MaskAntiDiagonal[]{
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
-[[nodiscard]] std::uint32_t pieceFromChar(char c) {
+[[nodiscard]] uint32_t pieceFromChar(char c) {
     switch (c) {
         case 'p':
         case 'P':
@@ -138,8 +141,8 @@ std::uint64_t MaskAntiDiagonal[]{
     }
 }
 
-[[nodiscard]] std::string moveToString(std::uint16_t move, bool blackToMove) {
-    auto str = std::string{
+[[nodiscard]] string moveToString(uint16_t move, bool blackToMove) {
+    auto str = string{
         (char)('a' + (move >> 10 & 7)),
         (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
         (char)('a' + (move >> 4 & 7)),
@@ -153,7 +156,7 @@ std::uint64_t MaskAntiDiagonal[]{
 
 struct BoardState {
     // pnbrqk ours theirs
-    std::uint64_t boards[8] = {
+    uint64_t boards[8] = {
         0xff00000000ff00,
         0x4200000000000042,
         0x2400000000000024,
@@ -165,21 +168,21 @@ struct BoardState {
     bool flags[2] = {false, false};  // black to move, in check
     // TODO castling rights might be smaller as a bitfield?
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
-    std::uint32_t epSquare = 0;
-    std::uint32_t halfmove = 0;
+    uint32_t epSquare = 0;
+    uint32_t halfmove = 0;
     // minify enable filter delete
-    std::uint32_t fullmove = 1;
+    uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
     // minify disable filter delete
 
-    [[nodiscard]] std::uint32_t pieceOn(std::uint32_t sq) {
+    [[nodiscard]] uint32_t pieceOn(uint32_t sq) {
         return 6 * !((boards[6] | boards[7]) & (1ULL << sq))            // return 6 (no piece) if no piece is on that square
              + 4 * !!((boards[4] | boards[5]) & (1ULL << sq))           // add 4 (0b100) if there is a queen or a king on that square, as they both have that bit set
              + 2 * !!((boards[2] | boards[3]) & (1ULL << sq))           // same with 2 (0b010) for bishops and rooks
              + !!((boards[1] | boards[3] | boards[5]) & (1ULL << sq));  // and 1 (0b001) for knights, rooks or kings
     }
 
-    [[nodiscard]] bool attackedByOpponent(std::uint32_t sq) const {
+    [[nodiscard]] bool attackedByOpponent(uint32_t sq) const {
         const auto bb = 1ULL << sq;
         return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & boards[0] & boards[7])  // pawns
             || (getKnightMoves(sq, 0) & boards[1] & boards[7])                                                        // knights
@@ -189,7 +192,7 @@ struct BoardState {
     }
 
     // minify enable filter delete
-    void setPiece(std::uint32_t sq, std::uint32_t piece, bool black) {
+    void setPiece(uint32_t sq, uint32_t piece, bool black) {
         const auto bit = 1ULL << sq;
         boards[piece] |= bit;
         boards[black == flags[0] ? 6 : 7] |= bit;
@@ -199,21 +202,21 @@ struct BoardState {
         for (auto &board : boards)
             board = __builtin_bswap64(board);
 
-        std::swap(boards[6], boards[7]);
-        std::swap(castlingRights[0], castlingRights[1]);
+        swap(boards[6], boards[7]);
+        swap(castlingRights[0], castlingRights[1]);
     }
     // minify disable filter delete
 };
 
-std::uint16_t stringToMove(std::string move, BoardState board) {
-    std::uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
-    std::uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
+uint16_t stringToMove(string move, BoardState board) {
+    uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
+    uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
 
     // castling
     if (board
                 .pieceOn(from)
             == 5
-        && std::abs(from - to) == 2) {
+        && abs(from - to) == 2) {
         return from << 10 | to << 4 | 2;
     }
 
@@ -228,14 +231,14 @@ std::uint16_t stringToMove(std::string move, BoardState board) {
 
 struct Board {
     BoardState state{};
-    std::vector<BoardState> history;
+    vector<BoardState> history;
 
     Board() {
         history.reserve(512);
     }
 
-    void generateFromGetter(std::uint16_t *&moves, std::uint64_t targets,
-                            std::uint64_t (*getter)(std::uint32_t, std::uint64_t), std::uint64_t pieces) const {
+    void generateFromGetter(uint16_t *&moves, uint64_t targets,
+                            uint64_t (*getter)(uint32_t, uint64_t), uint64_t pieces) const {
         while (pieces) {
             const auto from = __builtin_ctzll(pieces);
             pieces &= pieces - 1;
@@ -248,7 +251,7 @@ struct Board {
         }
     }
 
-    void generateMoves(std::uint16_t *moves, bool quiescence) const {
+    void generateMoves(uint16_t *moves, bool quiescence) const {
         {  // left pawn attacks
             auto attacks = (((state.boards[0] & state.boards[6]) << 7) & 0x7F7F7F7F7F7F7F7FULL)
                          & (state.boards[7] | (state.epSquare < 64 ? (1ULL << state.epSquare) : 0));
@@ -332,7 +335,7 @@ struct Board {
                            getKingMoves, state.boards[5] & state.boards[6]);
     }
 
-    bool makeMove(std::uint16_t move) {
+    bool makeMove(uint16_t move) {
         const auto piece = state.pieceOn(move >> 10);
         // minify enable filter delete
         assert(piece < 6);
@@ -404,8 +407,8 @@ struct Board {
         for (auto &board : state.boards)
             board = __builtin_bswap64(board);
 
-        std::swap(state.boards[6], state.boards[7]);
-        std::swap(state.castlingRights[0], state.castlingRights[1]);
+        swap(state.boards[6], state.boards[7]);
+        swap(state.castlingRights[0], state.castlingRights[1]);
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
 
         return false;
@@ -421,18 +424,18 @@ struct Board {
     }
 
     // minify enable filter delete
-    void parseFen(const std::string &fen) {
+    void parseFen(const string &fen) {
         const auto tokens = split(fen, ' ');
 
         if (tokens.size() != 6) {
-            std::cerr << "invalid fen (" << (tokens.size() < 6 ? "not enough" : "too many") << " tokens)" << std::endl;
+            cerr << "invalid fen (" << (tokens.size() < 6 ? "not enough" : "too many") << " tokens)" << endl;
             return;
         }
 
         const auto ranks = split(tokens[0], '/');
 
         if (ranks.size() != 8) {
-            std::cerr << "invalid fen (" << (ranks.size() < 8 ? "not enough" : "too many") << " ranks)" << std::endl;
+            cerr << "invalid fen (" << (ranks.size() < 8 ? "not enough" : "too many") << " ranks)" << endl;
             return;
         }
 
@@ -440,13 +443,13 @@ struct Board {
         for (auto &board : newState.boards)
             board = 0;
 
-        for (std::uint32_t rank = 0; rank < 8; ++rank) {
+        for (uint32_t rank = 0; rank < 8; ++rank) {
             const auto &pieces = ranks[rank];
 
-            std::uint32_t file = 0;
+            uint32_t file = 0;
             for (const auto c : pieces) {
                 if (file >= 8) {
-                    std::cerr << "invalid fen (too many files in rank" << rank << ")" << std::endl;
+                    cerr << "invalid fen (too many files in rank" << rank << ")" << endl;
                     return;
                 }
 
@@ -456,19 +459,19 @@ struct Board {
                     newState.setPiece(((7 - rank) << 3) | file, piece, islower(c));
                     ++file;
                 } else {
-                    std::cerr << "invalid fen (invalid piece '" << c << " in rank " << rank << ")" << std::endl;
+                    cerr << "invalid fen (invalid piece '" << c << " in rank " << rank << ")" << endl;
                     return;
                 }
             }
 
             if (file != 8) {
-                std::cerr << "invalid fen (" << (file < 8 ? "not enough" : "too many") << " files in rank" << rank << ")" << std::endl;
+                cerr << "invalid fen (" << (file < 8 ? "not enough" : "too many") << " files in rank" << rank << ")" << endl;
                 return;
             }
         }
 
         if (tokens[1].length() != 1) {
-            std::cerr << "invalid fen (invalid side to move)" << std::endl;
+            cerr << "invalid fen (invalid side to move)" << endl;
             return;
         }
 
@@ -479,7 +482,7 @@ struct Board {
             case 'w':
                 break;
             default:
-                std::cerr << "invalid fen (invalid side to move)" << std::endl;
+                cerr << "invalid fen (invalid side to move)" << endl;
                 return;
         }
 
@@ -487,7 +490,7 @@ struct Board {
             newState.flip();
 
         if (newState.attackedByOpponent(__builtin_ctzll(newState.boards[5] & newState.boards[6]))) {
-            std::cerr << "invalid fen (opponent is in check)" << std::endl;
+            cerr << "invalid fen (opponent is in check)" << endl;
             return;
         }
 
@@ -495,7 +498,7 @@ struct Board {
             newState.flip();
 
         if (tokens[2].length() > 4) {
-            std::cerr << "invalid fen (too many castling rights)" << std::endl;
+            cerr << "invalid fen (too many castling rights)" << endl;
             return;
         }
 
@@ -515,7 +518,7 @@ struct Board {
                         newState.castlingRights[1][1] = true;
                         break;
                     default:
-                        std::cerr << "invalid fen (invalid castling rights flag ' << " << flag << "')" << std::endl;
+                        cerr << "invalid fen (invalid castling rights flag ' << " << flag << "')" << endl;
                         return;
                 }
             }
@@ -526,7 +529,7 @@ struct Board {
                 || tokens[3][0] < 'a' || tokens[3][0] > 'h'
                 || tokens[3][1] < '1' || tokens[3][1] > '8'
                 || tokens[3][1] != (newState.flags[0] ? '3' : '6')) {
-                std::cerr << "invalid fen (invalid en passant square)" << std::endl;
+                cerr << "invalid fen (invalid en passant square)" << endl;
                 return;
             }
 
@@ -535,16 +538,16 @@ struct Board {
         }
 
         try {
-            newState.halfmove = std::stoul(tokens[4]);
+            newState.halfmove = stoul(tokens[4]);
         } catch (...) {
-            std::cerr << "invalid fen (invalid halfmove clock)" << std::endl;
+            cerr << "invalid fen (invalid halfmove clock)" << endl;
             return;
         }
 
         try {
-            newState.fullmove = std::stoul(tokens[5]);
+            newState.fullmove = stoul(tokens[5]);
         } catch (...) {
-            std::cerr << "invalid fen (invalid fullmove number)" << std::endl;
+            cerr << "invalid fen (invalid fullmove number)" << endl;
             return;
         }
 
@@ -557,7 +560,7 @@ struct Board {
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
     }
 
-    [[nodiscard]] static Board fromFen(const std::string &fen) {
+    [[nodiscard]] static Board fromFen(const string &fen) {
         Board board{};
         board.parseFen(fen);
         return board;
@@ -566,16 +569,16 @@ struct Board {
 };
 
 // minify enable filter delete
-std::size_t doPerft(Board &board, std::int32_t depth) {
+size_t doPerft(Board &board, int32_t depth) {
     if (depth == 0)
         return 1;
 
-    std::size_t total = 0;
+    size_t total = 0;
 
-    std::uint16_t moves[256] = {0};
+    uint16_t moves[256] = {0};
     board.generateMoves(moves, false);
 
-    std::size_t i = 0;
+    size_t i = 0;
     while (const auto move = moves[i++]) {
         if (board.makeMove(move)) {
             board.unmakeMove();
@@ -590,13 +593,13 @@ std::size_t doPerft(Board &board, std::int32_t depth) {
     return total;
 }
 
-void perft(Board &board, std::int32_t depth) {
-    std::size_t total = 0;
+void perft(Board &board, int32_t depth) {
+    size_t total = 0;
 
-    std::uint16_t moves[256] = {0};
+    uint16_t moves[256] = {0};
     board.generateMoves(moves, false);
 
-    std::size_t i = 0;
+    size_t i = 0;
     while (const auto move = moves[i++]) {
         if (board.makeMove(move)) {
             board.unmakeMove();
@@ -608,26 +611,26 @@ void perft(Board &board, std::int32_t depth) {
 
         board.unmakeMove();
 
-        std::cout << moveToString(move, board.state.flags[0]) << "\t" << value << std::endl;
+        cout << moveToString(move, board.state.flags[0]) << "\t" << value << endl;
     }
 
-    std::cout << total << " nodes" << std::endl;
+    cout << total << " nodes" << endl;
 }
 // minify disable filter delete
 
 int main() {
     Board board{};
-    std::string line;
+    string line;
 
-    while (std::getline(std::cin, line)) {
+    while (getline(cin, line)) {
         const auto tokens = split(line, ' ');
 
         if (tokens[0] == "quit")
             break;
         else if (tokens[0] == "uci") {
-            std::cout << "id name Pytteliten 0.1\nid author Crippa" << std::endl;
+            cout << "id name Pytteliten 0.1\nid author Crippa" << endl;
         } else if (tokens[0] == "isready")
-            std::cout << "readyok" << std::endl;
+            cout << "readyok" << endl;
         // else if (tokens[0] == "ucinewgame")
         else if (tokens[0] == "position") {
             // assume that the second token is 'startpos'
@@ -635,7 +638,7 @@ int main() {
 
             // minify enable filter delete
             if (tokens[1] == "fen") {
-                std::string fen;
+                string fen;
 
                 // concatenate the fen back together
                 for (auto i = 2; i < 8; i++)
@@ -643,7 +646,7 @@ int main() {
 
                 board.parseFen(fen);
 
-                auto moves = std::find(tokens.begin(), tokens.end(), "moves");
+                auto moves = find(tokens.begin(), tokens.end(), "moves");
 
                 if (moves != tokens.end()) {
                     for (moves++; moves != tokens.end(); moves++) {
