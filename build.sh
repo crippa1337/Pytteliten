@@ -26,10 +26,6 @@ do
     done
 done
 
-# Temp for me :|
-# lzma -f -k --lzma1=preset=9,lc=0,lp=0,pb=0,mf=hc3,nice=4 pytteliten-mini.cpp
-# cp -f pytteliten-mini.cpp.lzma pytteliten-mini-smallest.cpp.lzma
-
 # Create build script
 cat launcher.sh pytteliten-mini-smallest.cpp.lzma > ./pytteliten-mini
 
