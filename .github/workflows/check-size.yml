@@ -9,6 +9,14 @@ jobs:
       - name: Get size of PL mini
         run: bash build.sh
         shell: bash
+  pl_verify_clang_format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Verify PL complies with clang-fomat
+        uses: jidicula/clang-format-action@v4.11.0
+        with:
+          clang-format-version: '16'
   pl_verify_mini_build:
     runs-on: ubuntu-latest
     steps:
