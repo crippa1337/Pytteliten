@@ -777,14 +777,7 @@ void bench() {
 
 int main(int argc, char *argv[]) {
     // minify enable filter delete
-    bool bench_flag = false;
-    for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "bench") == 0) {
-            bench_flag = true;
-        }
-    }
-
-    if (bench_flag) {
+    if (string{argv[1]} == "bench") {
         bench();
         return 0;
     }
