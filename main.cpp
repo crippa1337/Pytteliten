@@ -577,16 +577,16 @@ struct Board {
 };
 
 // minify enable filter delete
-size_t doPerft(Board &board, int32_t depth) {
+uint64_t doPerft(Board &board, int32_t depth) {
     if (depth == 0)
         return 1;
 
-    size_t total = 0;
+    uint64_t total = 0;
 
     uint16_t moves[256] = {0};
     board.generateMoves(moves, false);
 
-    size_t i = 0;
+    uint64_t i = 0;
     while (const auto move = moves[i++]) {
         if (board.makeMove(move)) {
             board.unmakeMove();
@@ -602,12 +602,12 @@ size_t doPerft(Board &board, int32_t depth) {
 }
 
 void perft(Board &board, int32_t depth) {
-    size_t total = 0;
+    uint64_t total = 0;
 
     uint16_t moves[256] = {0};
     board.generateMoves(moves, false);
 
-    size_t i = 0;
+    uint64_t i = 0;
     while (const auto move = moves[i++]) {
         if (board.makeMove(move)) {
             board.unmakeMove();
@@ -644,7 +644,7 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchR
 
     int32_t bestScore = -32000;
 
-    size_t i = 0;
+    uint64_t i = 0;
     while (const auto move = moves[i++]) {
         if (board.makeMove(move)) {
             board.unmakeMove();
