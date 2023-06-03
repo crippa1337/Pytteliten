@@ -681,7 +681,7 @@ void searchRoot(Board &board, SearchResults &searchResults) {
 }
 
 // minify enable filter delete
-const std::string fens[62]{
+const string fens[62]{
     "r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
     "4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
     "r3qbrk/6p1/2b2pPp/p3pP1Q/PpPpP2P/3P1B2/2PB3K/R5R1 w - - 16 42",
@@ -751,9 +751,9 @@ void bench() {
 
     uint64_t totalNodes = 0;
 
-    auto startTimePoint = std::chrono::high_resolution_clock::now();
+    const auto startTimePoint = chrono::high_resolution_clock::now();
 
-    for (const std::string &fen : fens) {
+    for (const auto &fen : fens) {
         board.parseFen(fen);
 
         SearchResults searchResults{};
@@ -762,20 +762,24 @@ void bench() {
         totalNodes += searchResults.nodes;
     }
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-    auto elapsedTimePoint = std::chrono::duration_cast<std::chrono::milliseconds>(endTime
-                                                                                  - startTimePoint);
-    uint64_t elapsedTime = elapsedTimePoint.count();
-    elapsedTime = std::max<uint64_t>(elapsedTime, 1);
+    const auto endTime = chrono::high_resolution_clock::now();
+    const auto elapsedTimePoint = chrono::duration_cast<chrono::milliseconds>(endTime
+                                                                              - startTimePoint);
+    auto elapsedTime = elapsedTimePoint.count();
+    elapsedTime = max<int64_t>(elapsedTime, 1);
 
-    auto nps = static_cast<uint64_t>(static_cast<double>(totalNodes) / (static_cast<double>(elapsedTime) / 1000.0));
+    const auto nps = static_cast<uint64_t>(static_cast<double>(totalNodes) / (static_cast<double>(elapsedTime) / 1000.0));
 
-    std::cout << "info time " << elapsedTime << std::endl;
-    std::cout << totalNodes << " nodes " << nps << " nps" << std::endl;
+    cout << "info time " << elapsedTime << endl;
+    cout << totalNodes << " nodes " << nps << " nps" << endl;
 }
 // minify disable filter delete
 
-int main(int argc, char *argv[]) {
+int32_t main(
+    // minify enable filter delete
+    int argc, char *argv[]
+    // minify disable filter delete
+) {
     // minify enable filter delete
     if (string{argv[1]} == "bench") {
         bench();
