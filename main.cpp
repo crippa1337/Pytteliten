@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <chrono>
 
 // minify enable filter delete
 #include <cassert>
@@ -632,12 +633,19 @@ struct SearchResults {
     // minify enable filter delete
     uint64_t nodes = 0;
     // minify disable filter delete
+
+	bool searchComplete = true;
 };
 
-int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchResults) {
+int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchResults, auto hardTimeLimit) {
     if (depth == 0) {
         return board.evaluate();
     }
+
+	if ((chrono::high_resolution_clock::now() >= hardTimeLimit)) {
+		searchResults.searchComplete = false;
+		return 0;
+	}
 
     uint16_t moves[256] = {0};
     board.generateMoves(moves, false);
@@ -655,7 +663,7 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchR
         searchResults.nodes++;
         // minify disable filter delete
 
-        const int32_t value = -negamax(board, depth - 1, ply + 1, searchResults);
+        const int32_t value = -negamax(board, depth - 1, ply + 1, searchResults, hardTimeLimit);
 
         board.unmakeMove();
 
@@ -668,16 +676,30 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchR
     return bestScore;
 }
 
-void searchRoot(Board &board, SearchResults &searchResults) {
-    int32_t depth = 4;
+void searchRoot(Board &board, SearchResults &searchResults, auto timeRemaining, auto increment
+// minify enable filter delete
+,int32_t searchDepth = 64
+// minify disable filter delete
+) {
 
-    auto value = negamax(board, depth, 0, searchResults);
+	auto bestMove = 0;
+	for (auto depth = 0; depth <
+// minify enable filter delete
+searchDepth +
+// minify disable filter delete
+	64; depth++) {
+		// minify enable filter delete
+		auto value =
+		// minify disable filter delete
+				negamax(board, depth, 0, searchResults, chrono::high_resolution_clock::now() + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+		if (searchResults.searchComplete) bestMove = searchResults.bestMove;
 
-    // minify enable filter delete
-    cout << "info depth " << depth << " nodes " << searchResults.nodes << " score cp " << value << " pv " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
-    // minify disable filter delete
+		// minify enable filter delete
+		cout << "info depth " << depth << " nodes " << searchResults.nodes << " score cp " << value << " pv " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
+		// minify disable filter delete
+	}
 
-    cout << "bestmove " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
+	cout << "bestmove " << moveToString(bestMove, board.state.flags[0]) << endl;
 }
 
 // minify enable filter delete
@@ -757,7 +779,7 @@ void bench() {
         board.parseFen(fen);
 
         SearchResults searchResults{};
-        searchRoot(board, searchResults);
+        searchRoot(board, searchResults, 86'400'000, 86'400'000, 5 - 64);
 
         totalNodes += searchResults.nodes;
     }
@@ -836,7 +858,11 @@ int32_t main(
             }
         } else if (tokens[0] == "go") {
             SearchResults searchResults{};
-            searchRoot(board, searchResults);
+            searchRoot(board,
+					   searchResults,
+					   board.state.flags[0] ? stoi(tokens[1]) : stoi(tokens[2]),
+					   board.state.flags[0] ? stoi(tokens[3]) : stoi(tokens[4])
+			);
         }
     }
 }
