@@ -1,11 +1,18 @@
-name: Pytteliten Size Checker
-run-name: ${{ github.actor }} is checking the size of pytteliten
+name: Pytteliten Github Jobs
+run-name: ${{ github.actor }} is running jobs on Pytteliten
 on: [push, pull_request]
 jobs:
-  PL-Size-Checker:
+  pl_size_checker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run PL Build Script
+      - name: Get size of PL mini
         run: bash build.sh
+        shell: bash
+  pl_verify_mini_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Verify PL mini builds
+        run: make mini
         shell: bash
