@@ -37,4 +37,5 @@ rm -f pytteliten-mini-smallest.cpp.lzma
 chmod +x ./pytteliten-mini
 
 # Print pytteliten-mini file size
-ls -l ./pytteliten-mini
+echo
+echo pytteliten-mini size: $(($LAUNCHER_SIZE + $SMALLEST)) bytes
