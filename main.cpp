@@ -765,12 +765,12 @@ void bench() {
     auto endTime = std::chrono::high_resolution_clock::now();
     auto elapsedTimePoint = std::chrono::duration_cast<std::chrono::milliseconds>(endTime
                                                                                   - startTimePoint);
-    uint64_t elapsed_time = elapsedTimePoint.count();
-    elapsed_time = std::max<uint64_t>(elapsed_time, 1);
+    uint64_t elapsedTime = elapsedTimePoint.count();
+    elapsedTime = std::max<uint64_t>(elapsedTime, 1);
 
-    auto nps = static_cast<uint64_t>(static_cast<double>(totalNodes) / (static_cast<double>(elapsed_time) / 1000.0));
+    auto nps = static_cast<uint64_t>(static_cast<double>(totalNodes) / (static_cast<double>(elapsedTime) / 1000.0));
 
-    std::cout << "info time " << elapsed_time << std::endl;
+    std::cout << "info time " << elapsedTime << std::endl;
     std::cout << totalNodes << " nodes " << nps << " nps" << std::endl;
 }
 // minify disable filter delete
