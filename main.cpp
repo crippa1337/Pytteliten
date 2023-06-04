@@ -627,7 +627,7 @@ void perft(Board &board, int32_t depth) {
 }
 // minify disable filter delete
 
-struct SearchResults {
+struct ThreadData {
     uint16_t bestMove = 0;
 
     // minify enable filter delete
@@ -637,13 +637,13 @@ struct SearchResults {
     bool searchComplete = true;
 };
 
-int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchResults, auto hardTimeLimit) {
+int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData, auto hardTimeLimit) {
     if (depth == 0) {
         return board.evaluate();
     }
 
     if ((chrono::high_resolution_clock::now() >= hardTimeLimit)) {
-        searchResults.searchComplete = false;
+        threadData.searchComplete = false;
         return 0;
     }
 
@@ -660,23 +660,23 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchR
         }
 
         // minify enable filter delete
-        searchResults.nodes++;
+        threadData.nodes++;
         // minify disable filter delete
 
-        const int32_t value = -negamax(board, depth - 1, ply + 1, searchResults, hardTimeLimit);
+        const int32_t value = -negamax(board, depth - 1, ply + 1, threadData, hardTimeLimit);
 
         board.unmakeMove();
 
         if (value > bestScore) {
             bestScore = value;
-            if (ply == 0) searchResults.bestMove = move;
+            if (!ply) threadData.bestMove = move;
         }
     }
 
     return bestScore;
 }
 
-void searchRoot(Board &board, SearchResults &searchResults, auto timeRemaining, auto increment
+void searchRoot(Board &board, ThreadData &threadData, auto timeRemaining, auto increment
                 // minify enable filter delete
                 ,
                 int32_t searchDepth = 64
@@ -692,11 +692,11 @@ void searchRoot(Board &board, SearchResults &searchResults, auto timeRemaining, 
         // minify enable filter delete
         auto value =
             // minify disable filter delete
-            negamax(board, depth, 0, searchResults, chrono::high_resolution_clock::now() + chrono::milliseconds(timeRemaining / 40 + increment / 2));
-        if (searchResults.searchComplete) bestMove = searchResults.bestMove;
+            negamax(board, depth, 0, threadData, chrono::high_resolution_clock::now() + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+        if (threadData.searchComplete) bestMove = threadData.bestMove;
 
         // minify enable filter delete
-        cout << "info depth " << depth << " nodes " << searchResults.nodes << " score cp " << value << " pv " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
+        cout << "info depth " << depth << " nodes " << threadData.nodes << " score cp " << value << " pv " << moveToString(threadData.bestMove, board.state.flags[0]) << endl;
         // minify disable filter delete
     }
 
@@ -779,10 +779,10 @@ void bench() {
     for (const auto &fen : fens) {
         board.parseFen(fen);
 
-        SearchResults searchResults{};
-        searchRoot(board, searchResults, 86'400'000, 86'400'000, 5 - 64);
+        ThreadData threadData{};
+        searchRoot(board, threadData, 86'400'000, 86'400'000, 5 - 64);
 
-        totalNodes += searchResults.nodes;
+        totalNodes += threadData.nodes;
     }
 
     const auto endTime = chrono::high_resolution_clock::now();
@@ -858,9 +858,9 @@ int32_t main(
                 }
             }
         } else if (tokens[0] == "go") {
-            SearchResults searchResults{};
+            ThreadData threadData{};
             searchRoot(board,
-                       searchResults,
+                       threadData,
                        board.state.flags[0] ? stoi(tokens[1]) : stoi(tokens[2]),
                        board.state.flags[0] ? stoi(tokens[3]) : stoi(tokens[4]));
         }
