@@ -214,6 +214,11 @@ uint16_t stringToMove(string move, BoardState board) {
     uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
     uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
 
+    if (board.flags[0]) {
+        from ^= 56;
+        to ^= 56;
+    }
+
     // castling
     if (board
                 .pieceOn(from)
