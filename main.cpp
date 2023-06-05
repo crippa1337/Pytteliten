@@ -642,7 +642,7 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData
         return board.evaluate();
     }
 
-    if ((chrono::high_resolution_clock::now() >= hardTimeLimit)) {
+    if (chrono::high_resolution_clock::now() >= hardTimeLimit) {
         threadData.searchComplete = false;
         return 0;
     }
@@ -683,16 +683,23 @@ void searchRoot(Board &board, ThreadData &threadData, auto timeRemaining, auto i
                 // minify disable filter delete
 ) {
     auto bestMove = 0;
-    for (auto depth = 0; depth <
+    auto startTime = chrono::high_resolution_clock::now();
+    for (auto depth = 1; depth <
                          // minify enable filter delete
                          searchDepth +
                              // minify disable filter delete
                              64;
          depth++) {
         // minify enable filter delete
+        if (chrono::high_resolution_clock::now() >= startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2)) {
+            break;
+        }
+        // minify disable filter delete
+
+        // minify enable filter delete
         auto value =
             // minify disable filter delete
-            negamax(board, depth, 0, threadData, chrono::high_resolution_clock::now() + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+            negamax(board, depth, 0, threadData, startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
         if (threadData.searchComplete) bestMove = threadData.bestMove;
 
         // minify enable filter delete
@@ -804,7 +811,7 @@ int32_t main(
     // minify disable filter delete
 ) {
     // minify enable filter delete
-    if (string{argv[1]} == "bench") {
+    if (argc > 1 && string{argv[1]} == "bench") {
         bench();
         return 0;
     }
@@ -861,8 +868,13 @@ int32_t main(
             ThreadData threadData{};
             searchRoot(board,
                        threadData,
-                       board.state.flags[0] ? stoi(tokens[1]) : stoi(tokens[2]),
-                       board.state.flags[0] ? stoi(tokens[3]) : stoi(tokens[4]));
+                       stoi(tokens[board.state.flags[0] ? 4 : 2]),
+                       stoi(tokens[board.state.flags[0] ? 8 : 6]));
         }
+        // minify enable filter delete
+        else if (tokens[0] == "perft") {
+            perft(board, stoi(tokens[1]));
+        }
+        // minify disable filter delete
     }
 }
