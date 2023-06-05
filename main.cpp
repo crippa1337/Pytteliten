@@ -1,4 +1,4 @@
-// Size: 2345 Bytes
+// Size: 2369 bytes
 
 #include <chrono>
 #include <iostream>
@@ -214,6 +214,11 @@ uint16_t stringToMove(string move, BoardState board) {
     uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
     uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
 
+    if (board.flags[0]) {
+        from ^= 56;
+        to ^= 56;
+    }
+
     // castling
     if (board
                 .pieceOn(from)
@@ -222,9 +227,12 @@ uint16_t stringToMove(string move, BoardState board) {
         return from << 10 | to << 4 | 2;
     }
 
+    if (board.pieceOn(from) == 0 && to == board.epSquare)
+        return from << 10 | to << 4 | 3;
+
     // promotion
     if (move.length() == 5) {
-        return from << 10 | to << 4 | 1 << 2 | (pieceFromChar(move[4]) - 1);
+        return from << 10 | to << 4 | (pieceFromChar(move[4]) - 1) * 4 | 1;
     }
 
     // normal move
