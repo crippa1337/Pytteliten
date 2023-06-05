@@ -1,4 +1,4 @@
-// Size: 2370 bytes
+// Size: 2369 bytes
 
 #include <chrono>
 #include <iostream>
@@ -232,7 +232,7 @@ uint16_t stringToMove(string move, BoardState board) {
 
     // promotion
     if (move.length() == 5) {
-        return from << 10 | to << 4 | (pieceFromChar(move[4]) - 1) << 2 | 1;
+        return from << 10 | to << 4 | (pieceFromChar(move[4]) - 1) * 4 | 1;
     }
 
     // normal move
