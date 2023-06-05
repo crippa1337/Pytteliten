@@ -826,7 +826,7 @@ int32_t main(
         if (tokens[0] == "quit")
             break;
         else if (tokens[0] == "uci") {
-            cout << "id name Pytteliten 0.1\nid author Crippa" << endl;
+            cout << "id name Pytteliten 0.1\nid author Crippa\nuciok" << endl;
         } else if (tokens[0] == "isready")
             cout << "readyok" << endl;
         // else if (tokens[0] == "ucinewgame")
