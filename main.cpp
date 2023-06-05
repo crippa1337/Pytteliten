@@ -1,6 +1,5 @@
 // Size: 2354 Bytes
 
-#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <sstream>
@@ -8,6 +7,7 @@
 #include <vector>
 
 // minify enable filter delete
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 // minify disable filter delete
