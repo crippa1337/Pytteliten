@@ -1,5 +1,6 @@
 // Size: 2212 Bytes
 
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -626,17 +627,24 @@ void perft(Board &board, int32_t depth) {
 }
 // minify disable filter delete
 
-struct SearchResults {
+struct ThreadData {
     uint16_t bestMove = 0;
 
     // minify enable filter delete
     uint64_t nodes = 0;
     // minify disable filter delete
+
+    bool searchComplete = true;
 };
 
-int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchResults) {
+int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData, auto hardTimeLimit) {
     if (depth == 0) {
         return board.evaluate();
+    }
+
+    if (chrono::high_resolution_clock::now() >= hardTimeLimit) {
+        threadData.searchComplete = false;
+        return 0;
     }
 
     uint16_t moves[256] = {0};
@@ -652,32 +660,54 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, SearchResults &searchR
         }
 
         // minify enable filter delete
-        searchResults.nodes++;
+        threadData.nodes++;
         // minify disable filter delete
 
-        const int32_t value = -negamax(board, depth - 1, ply + 1, searchResults);
+        const int32_t value = -negamax(board, depth - 1, ply + 1, threadData, hardTimeLimit);
 
         board.unmakeMove();
 
         if (value > bestScore) {
             bestScore = value;
-            if (ply == 0) searchResults.bestMove = move;
+            if (!ply) threadData.bestMove = move;
         }
     }
 
     return bestScore;
 }
 
-void searchRoot(Board &board, SearchResults &searchResults) {
-    int32_t depth = 4;
+void searchRoot(Board &board, ThreadData &threadData, auto timeRemaining, auto increment
+                // minify enable filter delete
+                ,
+                int32_t searchDepth = 64
+                // minify disable filter delete
+) {
+    auto bestMove = 0;
+    auto startTime = chrono::high_resolution_clock::now();
+    for (auto depth = 1; depth <
+                         // minify enable filter delete
+                         searchDepth +
+                             // minify disable filter delete
+                             64;
+         depth++) {
+        // minify enable filter delete
+        if (chrono::high_resolution_clock::now() >= startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2)) {
+            break;
+        }
+        // minify disable filter delete
 
-    auto value = negamax(board, depth, 0, searchResults);
+        // minify enable filter delete
+        auto value =
+            // minify disable filter delete
+            negamax(board, depth, 0, threadData, startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+        if (threadData.searchComplete) bestMove = threadData.bestMove;
 
-    // minify enable filter delete
-    cout << "info depth " << depth << " nodes " << searchResults.nodes << " score cp " << value << " pv " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
-    // minify disable filter delete
+        // minify enable filter delete
+        cout << "info depth " << depth << " nodes " << threadData.nodes << " score cp " << value << " pv " << moveToString(threadData.bestMove, board.state.flags[0]) << endl;
+        // minify disable filter delete
+    }
 
-    cout << "bestmove " << moveToString(searchResults.bestMove, board.state.flags[0]) << endl;
+    cout << "bestmove " << moveToString(bestMove, board.state.flags[0]) << endl;
 }
 
 // minify enable filter delete
@@ -756,10 +786,10 @@ void bench() {
     for (const auto &fen : fens) {
         board.parseFen(fen);
 
-        SearchResults searchResults{};
-        searchRoot(board, searchResults);
+        ThreadData threadData{};
+        searchRoot(board, threadData, 86'400'000, 86'400'000, 5 - 64);
 
-        totalNodes += searchResults.nodes;
+        totalNodes += threadData.nodes;
     }
 
     const auto endTime = chrono::high_resolution_clock::now();
@@ -781,7 +811,7 @@ int32_t main(
     // minify disable filter delete
 ) {
     // minify enable filter delete
-    if (string{argv[1]} == "bench") {
+    if (argc > 1 && string{argv[1]} == "bench") {
         bench();
         return 0;
     }
@@ -835,8 +865,16 @@ int32_t main(
                 }
             }
         } else if (tokens[0] == "go") {
-            SearchResults searchResults{};
-            searchRoot(board, searchResults);
+            ThreadData threadData{};
+            searchRoot(board,
+                       threadData,
+                       stoi(tokens[board.state.flags[0] ? 4 : 2]),
+                       stoi(tokens[board.state.flags[0] ? 8 : 6]));
         }
+        // minify enable filter delete
+        else if (tokens[0] == "perft") {
+            perft(board, stoi(tokens[1]));
+        }
+        // minify disable filter delete
     }
 }

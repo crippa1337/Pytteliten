@@ -23,12 +23,13 @@ endif
 
 OUT := $(EXE)$(SUFFIX)
 
+all: $(EXE)
+
 minify:
 	python3 minifier.py
 
 mini: minify $(EXE)
 
-all: $(EXE)
 
 $(EXE) : $(SOURCES)
 	$(CXX) $(CXXFLAGS) -o $(OUT) $(SOURCES)
