@@ -652,7 +652,7 @@ struct ThreadData {
     bool searchComplete = true;
 };
 
-int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData, auto hardTimeLimit) {
+int32_t negamax(Board &board, ThreadData &threadData, int32_t ply, int32_t depth, auto alpha, auto beta, auto hardTimeLimit) {
     if (depth == 0) {
         return board.evaluate();
     }
@@ -678,13 +678,18 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData
         threadData.nodes++;
         // minify disable filter delete
 
-        const int32_t value = -negamax(board, depth - 1, ply + 1, threadData, hardTimeLimit);
+        const int32_t value = -negamax(board, threadData, ply + 1, depth - 1, -beta, -alpha, hardTimeLimit);
 
         board.unmakeMove();
 
         if (value > bestScore) {
             bestScore = value;
             if (!ply) threadData.bestMove = move;
+            if (value > alpha) {
+                alpha = value;
+                if (alpha >= beta)
+                    break;
+            }
         }
     }
 
@@ -714,7 +719,8 @@ void searchRoot(Board &board, ThreadData &threadData, auto timeRemaining, auto i
         // minify enable filter delete
         auto value =
             // minify disable filter delete
-            negamax(board, depth, 0, threadData, startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+            negamax(board, threadData, 0, depth, -32000, 32000,
+                    startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
         if (threadData.searchComplete) bestMove = threadData.bestMove;
 
         // minify enable filter delete
