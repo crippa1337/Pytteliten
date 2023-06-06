@@ -450,8 +450,14 @@ struct Board {
         }
 
         BoardState newState{};
+
         for (auto &board : newState.boards)
             board = 0;
+
+        newState.castlingRights[0][0] = false;
+        newState.castlingRights[0][1] = false;
+        newState.castlingRights[1][0] = false;
+        newState.castlingRights[1][1] = false;
 
         for (uint32_t rank = 0; rank < 8; ++rank) {
             const auto &pieces = ranks[rank];
