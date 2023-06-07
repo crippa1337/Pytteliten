@@ -1,5 +1,3 @@
-// Size: 2369 bytes
-
 #include <chrono>
 #include <iostream>
 #include <sstream>
