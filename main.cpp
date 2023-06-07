@@ -664,6 +664,7 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     board.generateMoves(moves, false);
 
     int32_t bestScore = -32000;
+    uint8_t movesMade = 0;
 
     uint64_t i = 0;
     while (const auto move = moves[i++]) {
@@ -672,6 +673,7 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
             continue;
         }
 
+        movesMade++;
         // minify enable filter delete
         threadData.nodes++;
         // minify disable filter delete
@@ -688,6 +690,14 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
                 if (alpha >= beta)
                     break;
             }
+        }
+    }
+
+    if (!movesMade) {
+        if (board.state.flags[1]) {
+            return -32000 + ply;
+        } else {
+            return 0;
         }
     }
 
