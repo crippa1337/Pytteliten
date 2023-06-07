@@ -1,5 +1,3 @@
-// Size: 2369 bytes
-
 #include <chrono>
 #include <iostream>
 #include <sstream>
@@ -64,22 +62,22 @@ uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
-[[nodiscard]] uint64_t slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
+[[nodiscard]] auto slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
          & mask;
 }
 
-[[nodiscard]] uint64_t getDiagonalMoves(uint32_t sq, uint64_t occ) {
+[[nodiscard]] auto getDiagonalMoves(uint32_t sq, uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ MaskDiagonal[7 + (sq >> 3) - (sq & 7)])
          ^ slidingAttacks(sq, occ, (1ULL << sq) ^ MaskAntiDiagonal[(sq & 7) + (sq >> 3)]);
 }
 
-[[nodiscard]] uint64_t getFileMoves(uint32_t sq, uint64_t occ) {
+[[nodiscard]] auto getFileMoves(uint32_t sq, uint64_t occ) {
     return slidingAttacks(sq, occ, (1ULL << sq) ^ 0x101010101010101 << (sq & 7));
 }
 
-[[nodiscard]] uint64_t getOrthogonalMoves(uint32_t sq, uint64_t occ) {
+[[nodiscard]] auto getOrthogonalMoves(uint32_t sq, uint64_t occ) {
     return getFileMoves(sq, occ)
          | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
                                              & 0x0101010101010101)
@@ -89,7 +87,7 @@ uint64_t MaskAntiDiagonal[]{
             << (sq - (sq & 7)));
 }
 
-[[nodiscard]] uint64_t getKingMoves(uint32_t sq, uint64_t) {
+[[nodiscard]] auto getKingMoves(uint32_t sq, uint64_t) {
     const auto asBb = 1ULL << sq;
     // north south
     return asBb << 8 | asBb >> 8
@@ -99,7 +97,7 @@ uint64_t MaskAntiDiagonal[]{
          | (asBb >> 9 | asBb << 7 | asBb >> 1) & ~0x8080808080808080ULL;
 }
 
-[[nodiscard]] uint64_t getKnightMoves(uint32_t sq, uint64_t) {
+[[nodiscard]] auto getKnightMoves(uint32_t sq, uint64_t) {
     const auto asBb = 1ULL << sq;
     return (asBb << 15 | asBb >> 17) & 0x7F7F7F7F7F7F7F7FULL | (asBb << 17 | asBb >> 15) & 0xFEFEFEFEFEFEFEFEULL
          | (asBb << 10 | asBb >> 6) & 0xFCFCFCFCFCFCFCFCULL | (asBb << 6 | asBb >> 10) & 0x3F3F3F3F3F3F3F3FULL;
@@ -118,7 +116,7 @@ uint64_t MaskAntiDiagonal[]{
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
-[[nodiscard]] uint32_t pieceFromChar(char c) {
+[[nodiscard]] auto pieceFromChar(char c) {
     switch (c) {
         case 'p':
         case 'P':
@@ -143,7 +141,7 @@ uint64_t MaskAntiDiagonal[]{
     }
 }
 
-[[nodiscard]] string moveToString(uint16_t move, bool blackToMove) {
+[[nodiscard]] auto moveToString(auto move, auto blackToMove) {
     auto str = string{
         (char)('a' + (move >> 10 & 7)),
         (char)('1' + (move >> 13 ^ (blackToMove ? 7 : 0))),
@@ -177,14 +175,14 @@ struct BoardState {
     bool operator==(const BoardState &) const;
     // minify disable filter delete
 
-    [[nodiscard]] uint32_t pieceOn(uint32_t sq) {
+    [[nodiscard]] uint32_t pieceOn(auto sq) {
         return 6 * !((boards[6] | boards[7]) & (1ULL << sq))            // return 6 (no piece) if no piece is on that square
              + 4 * !!((boards[4] | boards[5]) & (1ULL << sq))           // add 4 (0b100) if there is a queen or a king on that square, as they both have that bit set
              + 2 * !!((boards[2] | boards[3]) & (1ULL << sq))           // same with 2 (0b010) for bishops and rooks
              + !!((boards[1] | boards[3] | boards[5]) & (1ULL << sq));  // and 1 (0b001) for knights, rooks or kings
     }
 
-    [[nodiscard]] bool attackedByOpponent(uint32_t sq) const {
+    [[nodiscard]] bool attackedByOpponent(auto sq) const {
         const auto bb = 1ULL << sq;
         return ((((bb << 7) & 0x7F7F7F7F7F7F7F7FULL) | ((bb << 9) & 0xFEFEFEFEFEFEFEFEULL)) & boards[0] & boards[7])  // pawns
             || (getKnightMoves(sq, 0) & boards[1] & boards[7])                                                        // knights
@@ -194,7 +192,7 @@ struct BoardState {
     }
 
     // minify enable filter delete
-    void setPiece(uint32_t sq, uint32_t piece, bool black) {
+    void setPiece(auto sq, auto piece, auto black) {
         const auto bit = 1ULL << sq;
         boards[piece] |= bit;
         boards[black == flags[0] ? 6 : 7] |= bit;
@@ -210,7 +208,7 @@ struct BoardState {
     // minify disable filter delete
 };
 
-uint16_t stringToMove(string move, BoardState board) {
+uint16_t stringToMove(auto move, auto board) {
     uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
     uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
 
@@ -247,8 +245,8 @@ struct Board {
         history.reserve(512);
     }
 
-    void generateFromGetter(uint16_t *&moves, uint64_t targets,
-                            uint64_t (*getter)(uint32_t, uint64_t), uint64_t pieces) const {
+    void generateFromGetter(auto *&moves, auto targets,
+                            auto (*getter)(uint32_t, uint64_t), auto pieces) const {
         while (pieces) {
             const auto from = __builtin_ctzll(pieces);
             pieces &= pieces - 1;
@@ -261,7 +259,7 @@ struct Board {
         }
     }
 
-    void generateMoves(uint16_t *moves, bool quiescence) const {
+    void generateMoves(auto *moves, auto quiescence) const {
         {  // left pawn attacks
             auto attacks = (((state.boards[0] & state.boards[6]) << 7) & 0x7F7F7F7F7F7F7F7FULL)
                          & (state.boards[7] | (state.epSquare < 64 ? (1ULL << state.epSquare) : 0));
@@ -345,7 +343,7 @@ struct Board {
                            getKingMoves, state.boards[5] & state.boards[6]);
     }
 
-    bool makeMove(uint16_t move) {
+    bool makeMove(auto move) {
         const auto piece = state.pieceOn(move >> 10);
         // minify enable filter delete
         assert(piece < 6);
@@ -434,7 +432,7 @@ struct Board {
     }
 
     // minify enable filter delete
-    void parseFen(const string &fen) {
+    void parseFen(const auto &fen) {
         const auto tokens = split(fen, ' ');
 
         if (tokens.size() != 6) {
@@ -576,14 +574,14 @@ struct Board {
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
     }
 
-    [[nodiscard]] static Board fromFen(const string &fen) {
+    [[nodiscard]] static Board fromFen(const auto &fen) {
         Board board{};
         board.parseFen(fen);
         return board;
     }
     // minify disable filter delete
 
-    int32_t evaluateColor(bool color) {
+    int32_t evaluateColor(auto color) {
         return __builtin_popcountll(state.boards[0] & state.boards[6 + color]) * 100 + __builtin_popcountll(state.boards[1] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[2] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[3] & state.boards[6 + color]) * 500 + __builtin_popcountll(state.boards[4] & state.boards[6 + color]) * 900;
     }
 
@@ -593,7 +591,7 @@ struct Board {
 };
 
 // minify enable filter delete
-uint64_t doPerft(Board &board, int32_t depth) {
+uint64_t doPerft(auto &board, auto depth) {
     if (depth == 0)
         return 1;
 
@@ -617,7 +615,7 @@ uint64_t doPerft(Board &board, int32_t depth) {
     return total;
 }
 
-void perft(Board &board, int32_t depth) {
+void perft(auto &board, auto depth) {
     uint64_t total = 0;
 
     uint16_t moves[256] = {0};
@@ -652,7 +650,7 @@ struct ThreadData {
     bool searchComplete = true;
 };
 
-int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData, auto hardTimeLimit) {
+int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha, auto beta, auto hardTimeLimit) {
     if (depth == 0) {
         return board.evaluate();
     }
@@ -666,6 +664,7 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData
     board.generateMoves(moves, false);
 
     int32_t bestScore = -32000;
+    auto movesMade = 0;
 
     uint64_t i = 0;
     while (const auto move = moves[i++]) {
@@ -674,24 +673,38 @@ int32_t negamax(Board &board, int32_t depth, int32_t ply, ThreadData &threadData
             continue;
         }
 
+        movesMade++;
         // minify enable filter delete
         threadData.nodes++;
         // minify disable filter delete
 
-        const int32_t value = -negamax(board, depth - 1, ply + 1, threadData, hardTimeLimit);
+        const int32_t value = -negamax(board, threadData, ply + 1, depth - 1, -beta, -alpha, hardTimeLimit);
 
         board.unmakeMove();
 
         if (value > bestScore) {
             bestScore = value;
             if (!ply) threadData.bestMove = move;
+            if (value > alpha) {
+                alpha = value;
+                if (alpha >= beta)
+                    break;
+            }
+        }
+    }
+
+    if (!movesMade) {
+        if (board.state.flags[1]) {
+            return -32000 + ply;
+        } else {
+            return 0;
         }
     }
 
     return bestScore;
 }
 
-void searchRoot(Board &board, ThreadData &threadData, auto timeRemaining, auto increment
+void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto increment
                 // minify enable filter delete
                 ,
                 int32_t searchDepth = 64
@@ -714,7 +727,8 @@ void searchRoot(Board &board, ThreadData &threadData, auto timeRemaining, auto i
         // minify enable filter delete
         auto value =
             // minify disable filter delete
-            negamax(board, depth, 0, threadData, startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+            negamax(board, threadData, 0, depth, -32000, 32000,
+                    startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
         if (threadData.searchComplete) bestMove = threadData.bestMove;
 
         // minify enable filter delete
