@@ -696,8 +696,6 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     if (!movesMade)
         return board.state.flags[1] ? -32000 + ply : 0;
 
-    // I would merge these into another ternary but tt storing will go here so the savings would be fake
-
     return bestScore;
 }
 
