@@ -10,9 +10,10 @@ names = dict()
 KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint16_t', 'uint32_t', 'uint64_t', 'vector',
             'push_back', 'back', 'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'auto',
             'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void', 'string', 'char', 'abs',
-            'getline', 'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
-            'default', 'using', 'namespace', 'int32_t', '__builtin_popcountll', 'stoi', 'chrono',
-            'high_resolution_clock', 'duration_cast', 'milliseconds', 'now']
+            'getline', 'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue',
+            'size', 'default', 'using', 'namespace', 'int32_t', '__builtin_popcountll', 'stoi', 'chrono',
+            'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'stable_sort', 'pair', 'begin', 'end',
+            'second', 'greater']
 
 global counter, resets
 counter = 65  # ASCII A

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <sstream>
@@ -5,9 +6,9 @@
 #include <vector>
 
 // minify enable filter delete
-#include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <utility>
 // minify disable filter delete
 
 using namespace std;
@@ -660,14 +661,23 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         return 0;
     }
 
+    uint64_t i = 0;
     uint16_t moves[256] = {0};
     board.generateMoves(moves, false);
+
+    pair<int32_t, uint16_t> scoredMoves[256];
+    while (auto move = moves[i++]) {
+        scoredMoves[i] = {board.state.pieceOn(move >> 4 & 63) > 5 ? 1 : 6 + (int)board.state.pieceOn(move >> 4 & 63) - (int)board.state.pieceOn(move >> 10),
+                          move};
+    }
+    // This could be just std::sort in mini but I'm not entirely sure how to do one version for mini and another for OB, so stable sort will do for now
+    std::stable_sort(begin(scoredMoves), end(scoredMoves), greater());
 
     int32_t bestScore = -32000;
     auto movesMade = 0;
 
-    uint64_t i = 0;
-    while (const auto move = moves[i++]) {
+    i = 0;
+    while (const auto move = scoredMoves[i++].second) {
         if (board.makeMove(move)) {
             board.unmakeMove();
             continue;
