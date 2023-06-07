@@ -664,7 +664,7 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     board.generateMoves(moves, false);
 
     int32_t bestScore = -32000;
-    uint8_t movesMade = 0;
+    auto movesMade = 0;
 
     uint64_t i = 0;
     while (const auto move = moves[i++]) {
