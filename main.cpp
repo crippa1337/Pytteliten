@@ -693,13 +693,8 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         }
     }
 
-    if (!movesMade) {
-        if (board.state.flags[1]) {
-            return -32000 + ply;
-        } else {
-            return 0;
-        }
-    }
+    if (!movesMade)
+        return board.state.flags[1] ? -32000 + ply : 0;
 
     return bestScore;
 }
