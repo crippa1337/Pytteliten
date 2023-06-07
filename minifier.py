@@ -214,7 +214,7 @@ def minify(content: str):
         names[kw] = kw
 
     for token in tokens:
-        # # Remove any of the following:
+        # # Exclude the token if it is:
         # Line comments and deletion regions
         if token.startswith('//'):
             continue
@@ -225,12 +225,8 @@ def minify(content: str):
         elif token.startswith('[['):
             continue
 
-        # Remove newlines
-        if token == '\n':
-            continue
-
-        # Remove alone whitespace
-        if token.isspace():
+        # Exclude newlines, spaces, consts...
+        if token == '\n' or token.isspace() or token == 'const':
             continue
 
         # Add a seperator between tokens that can't be attached to each other.
