@@ -651,7 +651,7 @@ struct ThreadData {
 };
 
 int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha, auto beta, auto hardTimeLimit) {
-    if (chrono::high_resolution_clock::now() >= hardTimeLimit) {
+    if (chrono::high_resolution_clock::now() >= hardTimeLimit && ply > 0) {
         threadData.searchComplete = false;
         return 0;
     }
@@ -703,7 +703,7 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     }
 
     if (!movesMade)
-        return depth < 0 ? alpha : board.state.flags[1] ? -32000 + ply
+        return depth < 1 ? alpha : board.state.flags[1] ? -32000 + ply
                                                         : 0;
 
     return bestScore;
