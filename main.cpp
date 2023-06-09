@@ -735,7 +735,7 @@ void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto incremen
             negamax(board, threadData, 0, depth, -32000, 32000,
                     startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
 
-        if (!threadData.searchComplete && d > 1)
+        if (!threadData.searchComplete && depth > 1)
             break;
 
         bestMove = threadData.bestMove;
