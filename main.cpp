@@ -661,7 +661,7 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         staticEval = board.evaluate();
 
         if (staticEval >= beta)
-            return beta;
+            return staticEval;
 
         alpha = max(alpha, staticEval);
     }
@@ -670,6 +670,7 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     board.generateMoves(moves, depth < 1);
 
     int32_t bestScore = depth < 1 ? staticEval : -32000;
+
     auto movesMade = 0;
 
     uint64_t i = 0;
@@ -701,10 +702,11 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         }
     }
 
-    if (!movesMade && depth > 0)
-        return board.state.flags[1] ? -32000 + ply : 0;
+    if (!movesMade)
+        return depth < 0 ? alpha : board.state.flags[1] ? -32000 + ply
+                                                        : 0;
 
-    return alpha;
+    return bestScore;
 }
 
 void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto increment
