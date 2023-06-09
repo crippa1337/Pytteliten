@@ -693,8 +693,6 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
             if (!ply)
                 threadData.bestMove = move;
 
-            assert(threadData.bestMove != 0);
-
             if (score > alpha) {
                 alpha = score;
                 if (alpha >= beta)
