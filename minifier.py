@@ -12,7 +12,7 @@ KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint16_t', 'uin
             'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void', 'string', 'char', 'abs',
             'getline', 'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
             'default', 'using', 'namespace', 'int32_t', '__builtin_popcountll', 'stoi', 'chrono',
-            'high_resolution_clock', 'duration_cast', 'milliseconds', 'now']
+            'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max']
 
 global counter, resets
 counter = 65  # ASCII A
