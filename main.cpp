@@ -651,7 +651,7 @@ struct ThreadData {
 };
 
 int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha, auto beta, auto hardTimeLimit) {
-    if (chrono::high_resolution_clock::now() >= hardTimeLimit && ply > 0) {
+    if (chrono::high_resolution_clock::now() >= hardTimeLimit) {
         threadData.searchComplete = false;
         return 0;
     }
@@ -735,10 +735,8 @@ void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto incremen
             negamax(board, threadData, 0, depth, -32000, 32000,
                     startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
 
-        if (!threadData.searchComplete && depth > 1)
-            break;
-
-        bestMove = threadData.bestMove;
+        if (threadData.searchComplete)
+            bestMove = threadData.bestMove;
 
         // minify enable filter delete
         cout << "info depth " << depth << " nodes " << threadData.nodes << " score cp " << value << " pv " << moveToString(threadData.bestMove, board.state.flags[0]) << endl;
