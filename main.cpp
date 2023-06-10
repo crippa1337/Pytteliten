@@ -651,19 +651,26 @@ struct ThreadData {
 };
 
 int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha, auto beta, auto hardTimeLimit) {
-    if (depth == 0) {
-        return board.evaluate();
-    }
-
     if (chrono::high_resolution_clock::now() >= hardTimeLimit) {
         threadData.searchComplete = false;
         return 0;
     }
 
-    uint16_t moves[256] = {0};
-    board.generateMoves(moves, false);
+    int32_t staticEval;
+    if (depth < 1) {
+        staticEval = board.evaluate();
 
-    int32_t bestScore = -32000;
+        if (staticEval >= beta)
+            return staticEval;
+
+        alpha = max(alpha, staticEval);
+    }
+
+    uint16_t moves[256] = {0};
+    board.generateMoves(moves, depth < 1);
+
+    int32_t bestScore = depth < 1 ? staticEval : -32000;
+
     auto movesMade = 0;
 
     uint64_t i = 0;
@@ -678,15 +685,17 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         threadData.nodes++;
         // minify disable filter delete
 
-        const int32_t value = -negamax(board, threadData, ply + 1, depth - 1, -beta, -alpha, hardTimeLimit);
+        const int32_t score = -negamax(board, threadData, ply + 1, depth - 1, -beta, -alpha, hardTimeLimit);
 
         board.unmakeMove();
 
-        if (value > bestScore) {
-            bestScore = value;
-            if (!ply) threadData.bestMove = move;
-            if (value > alpha) {
-                alpha = value;
+        if (score > bestScore) {
+            bestScore = score;
+            if (!ply)
+                threadData.bestMove = move;
+
+            if (score > alpha) {
+                alpha = score;
                 if (alpha >= beta)
                     break;
             }
@@ -694,7 +703,8 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     }
 
     if (!movesMade)
-        return board.state.flags[1] ? -32000 + ply : 0;
+        return depth < 1 ? alpha : board.state.flags[1] ? -32000 + ply
+                                                        : 0;
 
     return bestScore;
 }
@@ -724,7 +734,9 @@ void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto incremen
             // minify disable filter delete
             negamax(board, threadData, 0, depth, -32000, 32000,
                     startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
-        if (threadData.searchComplete) bestMove = threadData.bestMove;
+
+        if (threadData.searchComplete)
+            bestMove = threadData.bestMove;
 
         // minify enable filter delete
         cout << "info depth " << depth << " nodes " << threadData.nodes << " score cp " << value << " pv " << moveToString(threadData.bestMove, board.state.flags[0]) << endl;
