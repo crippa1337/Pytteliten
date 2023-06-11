@@ -671,10 +671,9 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     board.generateMoves(moves, depth < 1);
 
     // mvv-lva sorting
-    const int32_t pieceVals[] = {1, 3, 3, 5, 9};
     pair<int32_t, uint16_t> scoredMoves[256];
     while (auto move = moves[i++])
-        scoredMoves[i] = {board.state.pieceOn(move >> 4 & 63) > 5 ? 0 : 10 * pieceVals[board.state.pieceOn(move >> 4 & 63)] - pieceVals[board.state.pieceOn(move >> 10)],
+        scoredMoves[i] = {board.state.pieceOn(move >> 4 & 63) > 5 ? 0 : 10 * board.state.pieceOn(move >> 4 & 63) - board.state.pieceOn(move >> 10),
                           move};
     stable_sort(begin(scoredMoves), end(scoredMoves), greater());
 
