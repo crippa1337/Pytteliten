@@ -673,13 +673,15 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
     // mvv-lva sorting
     pair<int32_t, uint16_t> scoredMoves[256];
     while (auto move = moves[i++])
-        scoredMoves[i] = {board.state.pieceOn(move >> 4 & 63) > 5 ? 0 : 9 * board.state.pieceOn(move >> 4 & 63) - board.state.pieceOn(move >> 10),
+        scoredMoves[i] = {board.state.pieceOn(move >> 4 & 63) > 5 ? 0 : 9 + 9 * board.state.pieceOn(move >> 4 & 63) - board.state.pieceOn(move >> 10),
                           move};
-    stable_sort(scoredMoves, scoredMoves + i - 1, greater());
+    stable_sort(scoredMoves, scoredMoves + i, greater());
 
-    for (int j = 0; j < i; j++)
-        if (!threadData.nodes)
-            cout << "Move " << j << ": " << moveToString(scoredMoves[j].second, board.state.flags[0]) << " (" << scoredMoves[j].first << ")" << endl;
+    //if (!threadData.nodes) {
+    //    auto j = 0;
+    //    while (const auto move = scoredMoves[j++].second)
+    //        cout << moveToString(move, board.state.flags[0]) << " 1" << endl;
+    //}
 
     int32_t bestScore = depth < 1 ? staticEval : -32000;
 
