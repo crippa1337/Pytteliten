@@ -677,12 +677,6 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
                           move};
     stable_sort(scoredMoves, scoredMoves + i, greater());
 
-    //if (!threadData.nodes) {
-    //    auto j = 0;
-    //    while (const auto move = scoredMoves[j++].second)
-    //        cout << moveToString(move, board.state.flags[0]) << " 1" << endl;
-    //}
-
     int32_t bestScore = depth < 1 ? staticEval : -32000;
 
     auto movesMade = 0;
