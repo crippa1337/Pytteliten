@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <sstream>
@@ -5,7 +6,6 @@
 #include <vector>
 
 // minify enable filter delete
-#include <algorithm>
 #include <cassert>
 #include <cctype>
 // minify disable filter delete
@@ -175,7 +175,7 @@ struct BoardState {
     bool operator==(const BoardState &) const;
     // minify disable filter delete
 
-    [[nodiscard]] uint32_t pieceOn(auto sq) {
+    [[nodiscard]] int32_t pieceOn(auto sq) {
         return 6 * !((boards[6] | boards[7]) & (1ULL << sq))            // return 6 (no piece) if no piece is on that square
              + 4 * !!((boards[4] | boards[5]) & (1ULL << sq))           // add 4 (0b100) if there is a queen or a king on that square, as they both have that bit set
              + 2 * !!((boards[2] | boards[3]) & (1ULL << sq))           // same with 2 (0b010) for bishops and rooks
@@ -666,15 +666,22 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         alpha = max(alpha, staticEval);
     }
 
+    auto i = 0;
     uint16_t moves[256] = {0};
     board.generateMoves(moves, depth < 1);
+
+    // mvv-lva sorting
+    pair<int32_t, uint16_t> scoredMoves[256];
+    while (auto move = moves[i++])
+        scoredMoves[i] = {board.state.pieceOn(move >> 4 & 63) > 5 ? 0 : 9 + 9 * board.state.pieceOn(move >> 4 & 63) - board.state.pieceOn(move >> 10),
+                          move};
+    stable_sort(scoredMoves, scoredMoves + i, greater());
 
     int32_t bestScore = depth < 1 ? staticEval : -32000;
 
     auto movesMade = 0;
-
-    uint64_t i = 0;
-    while (const auto move = moves[i++]) {
+    i = 0;
+    while (const auto move = scoredMoves[i++].second) {
         if (board.makeMove(move)) {
             board.unmakeMove();
             continue;
