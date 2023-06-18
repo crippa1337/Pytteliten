@@ -582,11 +582,17 @@ struct Board {
     // minify disable filter delete
 
     int32_t evaluateColor(auto color) {
-        return __builtin_popcountll(state.boards[0] & state.boards[6 + color]) * 100 + __builtin_popcountll(state.boards[1] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[2] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[3] & state.boards[6 + color]) * 500 + __builtin_popcountll(state.boards[4] & state.boards[6 + color]) * 900;
+        return
+            // material
+            __builtin_popcountll(state.boards[0] & state.boards[6 + color]) * 100
+            + __builtin_popcountll(state.boards[1] & state.boards[6 + color]) * 300
+            + __builtin_popcountll(state.boards[2] & state.boards[6 + color]) * 300
+            + __builtin_popcountll(state.boards[3] & state.boards[6 + color]) * 500
+            + __builtin_popcountll(state.boards[4] & state.boards[6 + color]) * 900;
     }
 
     int32_t evaluate() {
-        return evaluateColor(false) - evaluateColor(true);
+        return evaluateColor(false) - evaluateColor(true) + 20;
     }
 };
 
