@@ -881,7 +881,7 @@ int32_t main(
 ) {
     // initialise zobrist hashes
     auto seed = 0x179827108UL;
-    for (int i = 0; i < 768; i++) ZobristPieces[i] = xorShift(seed);
+    for (auto i = 0; i < 768; i++) ZobristPieces[i] = xorShift(seed);
 
     // minify enable filter delete
     if (argc > 1 && string{argv[1]} == "bench") {
