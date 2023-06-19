@@ -64,13 +64,6 @@ uint64_t MaskAntiDiagonal[]{
 
 uint64_t ZobristPieces[768]{};
 
-auto xorShift(uint64_t &seed) {
-    seed ^= seed << 13;
-    seed ^= seed >> 7;
-    seed ^= seed << 17;
-    return seed;
-}
-
 [[nodiscard]] auto slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
@@ -879,7 +872,12 @@ int32_t main(
 ) {
     // initialise zobrist hashes
     uint64_t seed = 0x179827108ULL;
-    for (auto i = 0; i < 768; i++) ZobristPieces[i] = xorShift(seed);
+    for (auto i = 0; i < 768; i++) {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        ZobristPieces[i] = seed;
+    };
 
     // minify enable filter delete
     if (argc > 1 && string{argv[1]} == "bench") {
