@@ -208,7 +208,7 @@ struct BoardState {
             while (bb) {
                 auto sq = __builtin_ctzll(bb);
                 bb &= bb - 1;
-                hash ^= ZobristPieces[384 * (i / 6) + 64 * (i - 6 * (i / 6)) + sq];
+                hash ^= ZobristPieces[64 * i + sq];
             }
         }
     }
