@@ -878,7 +878,7 @@ int32_t main(
     // minify disable filter delete
 ) {
     // initialise zobrist hashes
-    auto seed = 0x179827108UL;
+    uint64_t seed = 0x179827108ULL;
     for (auto i = 0; i < 768; i++) ZobristPieces[i] = xorShift(seed);
 
     // minify enable filter delete
