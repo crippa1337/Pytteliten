@@ -172,7 +172,7 @@ struct BoardState {
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
     uint32_t halfmove = 0;
-    uint64_t hash = 0;
+    uint64_t hash;
     // minify enable filter delete
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
@@ -870,7 +870,7 @@ int32_t main(
     int argc, char *argv[]
     // minify disable filter delete
 ) {
-    // initialise zobrist hashes, xor-shift pnrg
+    // initialise zobrist hashes, xor-shift prng
     uint64_t seed = 0x179827108ULL;
     for (auto i = 0; i < 768; i++)
         ZobristPieces[i] = seed ^= (seed ^= (seed ^= seed << 13) >> 7) << 17;
