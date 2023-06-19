@@ -934,7 +934,7 @@ int32_t main(
                 for (auto i = 3; i < tokens.size(); i++) {
                     uint16_t moves[256] = {0};
                     board.generateMoves(moves, false);
-                    for (auto &move: moves)
+                    for (auto &move : moves)
                         if (tokens[i] == moveToString(move, board.state.flags[0]))
                             board.makeMove(move);
                 }
