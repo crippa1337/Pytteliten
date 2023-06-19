@@ -179,7 +179,7 @@ struct BoardState {
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
     uint32_t halfmove = 0;
-    uint64_t hash = 0xD0B028C559B694A9ULL;
+    uint64_t hash = 0;
     // minify enable filter delete
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
@@ -893,6 +893,8 @@ int32_t main(
     Board board{};
     string line;
 
+    board.state.setHash();
+
     while (getline(cin, line)) {
         const auto tokens = split(line, ' ');
 
@@ -906,6 +908,7 @@ int32_t main(
         else if (tokens[0] == "position") {
             // assume that the second token is 'startpos'
             board = Board{};
+            board.state.setHash();
 
             // minify enable filter delete
             if (tokens[1] == "fen") {
