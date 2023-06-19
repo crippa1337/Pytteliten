@@ -118,6 +118,7 @@ uint64_t ZobristPieces[768]{};
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
+// minify enable filter delete
 [[nodiscard]] auto pieceFromChar(char c) {
     switch (c) {
         case 'p':
@@ -142,6 +143,7 @@ uint64_t ZobristPieces[768]{};
             return 6;
     }
 }
+// minify disable filter delete
 
 [[nodiscard]] auto moveToString(auto move, auto blackToMove) {
     auto str = string{
@@ -223,6 +225,7 @@ struct BoardState {
     // minify disable filter delete
 };
 
+// minify enable filter delete
 uint16_t stringToMove(auto move, auto board) {
     uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
     uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
@@ -251,6 +254,7 @@ uint16_t stringToMove(auto move, auto board) {
     // normal move
     return from << 10 | to << 4;
 }
+// minify disable filter delete
 
 struct Board {
     BoardState state{};
@@ -928,8 +932,11 @@ int32_t main(
             if (tokens.size() > 2) {
                 // assume that the third token is 'moves'
                 for (auto i = 3; i < tokens.size(); i++) {
-                    const auto move = stringToMove(tokens[i], board.state);
-                    board.makeMove(move);
+                    uint16_t moves[256] = {0};
+                    board.generateMoves(moves, false);
+                    for (auto &move: moves)
+                        if (tokens[i] == moveToString(move, board.state.flags[0]))
+                            board.makeMove(move);
                 }
             }
         } else if (tokens[0] == "go") {
