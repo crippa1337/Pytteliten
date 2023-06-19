@@ -872,7 +872,8 @@ int32_t main(
 ) {
     // initialise zobrist hashes, xor-shift pnrg
     uint64_t seed = 0x179827108ULL;
-    for (auto i = 0; i < 768; i++) ZobristPieces[i] = seed ^= (seed ^= (seed ^= seed << 13) >> 7) << 17;
+    for (auto i = 0; i < 768; i++)
+        ZobristPieces[i] = seed ^= (seed ^= (seed ^= seed << 13) >> 7) << 17;
 
     // minify enable filter delete
     if (argc > 1 && string{argv[1]} == "bench") {
