@@ -62,6 +62,15 @@ uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
+uint64_t ZobristPieces[768]{};
+
+auto xorShift(uint64_t &seed) {
+    seed ^= seed << 13;
+    seed ^= seed >> 7;
+    seed ^= seed << 17;
+    return seed;
+}
+
 [[nodiscard]] auto slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
@@ -170,6 +179,7 @@ struct BoardState {
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
     uint32_t halfmove = 0;
+    uint64_t hash = 0xD0B028C559B694A9ULL;
     // minify enable filter delete
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
@@ -196,6 +206,20 @@ struct BoardState {
         const auto bit = 1ULL << sq;
         boards[piece] |= bit;
         boards[black == flags[0] ? 6 : 7] |= bit;
+    }
+
+    void setHash() {
+        hash = 0;
+        for (auto side = 0; side < 2; side++) {
+            for (auto pc = 0; pc < 6; pc++) {
+                auto bb = boards[pc] & boards[6 + side];
+                while (bb) {
+                    auto sq = __builtin_ctzll(bb);
+                    bb &= bb - 1;
+                    hash ^= ZobristPieces[384 * side + 64 * pc + sq];
+                }
+            }
+        }
     }
 
     void flip() {
@@ -418,6 +442,7 @@ struct Board {
         swap(state.boards[6], state.boards[7]);
         swap(state.castlingRights[0], state.castlingRights[1]);
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        state.setHash();
 
         return false;
     }
@@ -572,6 +597,7 @@ struct Board {
             state.flip();
 
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        state.setHash();
     }
 
     [[nodiscard]] static Board fromFen(const auto &fen) {
@@ -853,6 +879,10 @@ int32_t main(
     int argc, char *argv[]
     // minify disable filter delete
 ) {
+    // initialise zobrist hashes
+    auto seed = 0x179827108UL;
+    for (int i = 0; i < 768; i++) ZobristPieces[i] = xorShift(seed);
+
     // minify enable filter delete
     if (argc > 1 && string{argv[1]} == "bench") {
         bench();
