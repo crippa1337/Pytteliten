@@ -225,37 +225,6 @@ struct BoardState {
     // minify disable filter delete
 };
 
-// minify enable filter delete
-uint16_t stringToMove(auto move, auto board) {
-    uint16_t from = move[0] - 'a' | move[1] - '1' << 3;
-    uint16_t to = move[2] - 'a' | move[3] - '1' << 3;
-
-    if (board.flags[0]) {
-        from ^= 56;
-        to ^= 56;
-    }
-
-    // castling
-    if (board
-                .pieceOn(from)
-            == 5
-        && abs(from - to) == 2) {
-        return from << 10 | to << 4 | 2;
-    }
-
-    if (board.pieceOn(from) == 0 && to == board.epSquare)
-        return from << 10 | to << 4 | 3;
-
-    // promotion
-    if (move.length() == 5) {
-        return from << 10 | to << 4 | (pieceFromChar(move[4]) - 1) * 4 | 1;
-    }
-
-    // normal move
-    return from << 10 | to << 4;
-}
-// minify disable filter delete
-
 struct Board {
     BoardState state{};
     vector<BoardState> history;
@@ -916,12 +885,15 @@ int32_t main(
 
                 board.parseFen(fen);
 
-                auto moves = find(tokens.begin(), tokens.end(), "moves");
+                auto move_string = find(tokens.begin(), tokens.end(), "moves");
 
-                if (moves != tokens.end()) {
-                    for (moves++; moves != tokens.end(); moves++) {
-                        const auto move = stringToMove(*moves, board.state);
-                        board.makeMove(move);
+                if (move_string != tokens.end()) {
+                    for (move_string++; move_string != tokens.end(); move_string++) {
+                        uint16_t moves[256] = {0};
+                        board.generateMoves(moves, false);
+                        for (auto &move : moves)
+                            if (*move_string == moveToString(move, board.state.flags[0]))
+                                board.makeMove(move);
                     }
                 }
 
