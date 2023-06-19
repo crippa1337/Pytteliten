@@ -62,6 +62,8 @@ uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
+uint64_t ZobristPieces[768]{};
+
 [[nodiscard]] auto slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
     return ((occ & mask) - (1ULL << square)
             ^ __builtin_bswap64(__builtin_bswap64(occ & mask) - __builtin_bswap64(1ULL << square)))
@@ -170,6 +172,7 @@ struct BoardState {
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
     uint32_t halfmove = 0;
+    uint64_t hash;
     // minify enable filter delete
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
@@ -189,6 +192,18 @@ struct BoardState {
             || (getKingMoves(sq, 0) & boards[5] & boards[7])                                                          // kings
             || (getOrthogonalMoves(sq, boards[6] | boards[7]) & (boards[3] | boards[4]) & boards[7])                  // rooks and queens
             || (getDiagonalMoves(sq, boards[6] | boards[7]) & (boards[2] | boards[4]) & boards[7]);                   // bishops and queens
+    }
+
+    void setHash() {
+        hash = 0;
+        for (auto i = 0; i < 12; i++) {
+            auto bb = boards[i - 6 * (i / 6)] & boards[6 + i / 6];
+            while (bb) {
+                auto sq = __builtin_ctzll(bb);
+                bb &= bb - 1;
+                hash ^= ZobristPieces[64 * i + sq];
+            }
+        }
     }
 
     // minify enable filter delete
@@ -418,6 +433,7 @@ struct Board {
         swap(state.boards[6], state.boards[7]);
         swap(state.castlingRights[0], state.castlingRights[1]);
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        state.setHash();
 
         return false;
     }
@@ -572,6 +588,7 @@ struct Board {
             state.flip();
 
         state.flags[1] = state.attackedByOpponent(__builtin_ctzll(state.boards[5] & state.boards[6]));
+        state.setHash();
     }
 
     [[nodiscard]] static Board fromFen(const auto &fen) {
@@ -853,6 +870,11 @@ int32_t main(
     int argc, char *argv[]
     // minify disable filter delete
 ) {
+    // initialise zobrist hashes, xor-shift prng
+    uint64_t seed = 0x179827108ULL;
+    for (auto i = 0; i < 768; i++)
+        ZobristPieces[i] = seed ^= (seed ^= (seed ^= seed << 13) >> 7) << 17;
+
     // minify enable filter delete
     if (argc > 1 && string{argv[1]} == "bench") {
         bench();
@@ -862,6 +884,8 @@ int32_t main(
 
     Board board{};
     string line;
+
+    board.state.setHash();
 
     while (getline(cin, line)) {
         const auto tokens = split(line, ' ');
@@ -876,6 +900,7 @@ int32_t main(
         else if (tokens[0] == "position") {
             // assume that the second token is 'startpos'
             board = Board{};
+            board.state.setHash();
 
             // minify enable filter delete
             if (tokens[1] == "fen") {
