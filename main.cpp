@@ -201,13 +201,6 @@ struct BoardState {
             || (getDiagonalMoves(sq, boards[6] | boards[7]) & (boards[2] | boards[4]) & boards[7]);                   // bishops and queens
     }
 
-    // minify enable filter delete
-    void setPiece(auto sq, auto piece, auto black) {
-        const auto bit = 1ULL << sq;
-        boards[piece] |= bit;
-        boards[black == flags[0] ? 6 : 7] |= bit;
-    }
-
     void setHash() {
         hash = 0;
         for (auto side = 0; side < 2; side++) {
@@ -220,6 +213,13 @@ struct BoardState {
                 }
             }
         }
+    }
+
+    // minify enable filter delete
+    void setPiece(auto sq, auto piece, auto black) {
+        const auto bit = 1ULL << sq;
+        boards[piece] |= bit;
+        boards[black == flags[0] ? 6 : 7] |= bit;
     }
 
     void flip() {
