@@ -203,14 +203,12 @@ struct BoardState {
 
     void setHash() {
         hash = 0;
-        for (auto side = 0; side < 2; side++) {
-            for (auto pc = 0; pc < 6; pc++) {
-                auto bb = boards[pc] & boards[6 + side];
-                while (bb) {
-                    auto sq = __builtin_ctzll(bb);
-                    bb &= bb - 1;
-                    hash ^= ZobristPieces[384 * side + 64 * pc + sq];
-                }
+        for (auto i = 0; i < 12; i++) {
+            auto bb = boards[i - 6 * (i / 6)] & boards[6 + i / 6];
+            while (bb) {
+                auto sq = __builtin_ctzll(bb);
+                bb &= bb - 1;
+                hash ^= ZobristPieces[384 * (i / 6) + 64 * (i - 6 * (i / 6)) + sq];
             }
         }
     }
