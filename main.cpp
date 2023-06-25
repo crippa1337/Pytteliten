@@ -81,8 +81,7 @@ uint64_t ZobristPieces[768]{};
 
 [[nodiscard]] auto getOrthogonalMoves(uint32_t sq, uint64_t occ) {
     return getFileMoves(sq, occ)
-         | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7)
-                                             & 0x0101010101010101)
+         | (((getFileMoves(8 * (7 - sq), (((occ >> (sq - (sq & 7)) & 0xFF) * 0x8040201008040201) >> 7) & 0x0101010101010101)
               * 0x8040201008040201)
                  >> 56
              & 0xFF)
@@ -233,8 +232,7 @@ struct Board {
         history.reserve(512);
     }
 
-    void generateFromGetter(auto *&moves, auto targets,
-                            auto (*getter)(uint32_t, uint64_t), auto pieces) const {
+    void generateFromGetter(auto *&moves, auto targets, auto (*getter)(uint32_t, uint64_t), auto pieces) const {
         while (pieces) {
             const auto from = __builtin_ctzll(pieces);
             pieces &= pieces - 1;
@@ -321,14 +319,10 @@ struct Board {
                 *(moves++) = 4130;  // (e1 << 10) | (c1 << 4) | 2
         }
 
-        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6],
-                           getKnightMoves, state.boards[1] & state.boards[6]);
-        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6],
-                           getDiagonalMoves, (state.boards[2] | state.boards[4]) & state.boards[6]);
-        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6],
-                           getOrthogonalMoves, (state.boards[3] | state.boards[4]) & state.boards[6]);
-        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6],
-                           getKingMoves, state.boards[5] & state.boards[6]);
+        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6], getKnightMoves, state.boards[1] & state.boards[6]);
+        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6], getDiagonalMoves, (state.boards[2] | state.boards[4]) & state.boards[6]);
+        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6], getOrthogonalMoves, (state.boards[3] | state.boards[4]) & state.boards[6]);
+        generateFromGetter(moves, quiescence ? state.boards[7] : ~state.boards[6], getKingMoves, state.boards[5] & state.boards[6]);
     }
 
     bool makeMove(auto move) {
@@ -739,8 +733,7 @@ void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto incremen
         // minify enable filter delete
         auto value =
             // minify disable filter delete
-            negamax(board, threadData, 0, depth, -32000, 32000,
-                    startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
+            negamax(board, threadData, 0, depth, -32000, 32000, startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
 
         if (threadData.searchComplete)
             bestMove = threadData.bestMove;
@@ -850,7 +843,8 @@ void bench() {
 
 int32_t main(
     // minify enable filter delete
-    int argc, char *argv[]
+    int argc,
+    char *argv[]
     // minify disable filter delete
 ) {
     // initialise zobrist hashes, xor-shift prng
