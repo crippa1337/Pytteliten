@@ -173,9 +173,9 @@ struct BoardState {
     // TODO castling rights might be smaller as a bitfield?
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
-    uint32_t halfmove = 0;
     uint64_t hash;
     // minify enable filter delete
+    uint32_t halfmove = 0;
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
     // minify disable filter delete
@@ -234,7 +234,7 @@ struct Board {
     }
 
     void generateFromGetter(auto *&moves, auto targets,
-                            auto (*getter)(uint32_t, uint64_t), auto pieces) const {
+                            auto(*getter)(uint32_t, uint64_t), auto pieces) const {
         while (pieces) {
             const auto from = __builtin_ctzll(pieces);
             pieces &= pieces - 1;
@@ -342,17 +342,19 @@ struct Board {
 
         history.push_back(state);
 
+        // minify enable filter delete
         state.halfmove++;
         if (piece == 0) state.halfmove = 0;
 
-        // minify enable filter delete
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(state.pieceOn(move >> 4 & 63) < 6);
         // minify disable filter delete
 
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
+            // minify enable filter delete
             state.halfmove = 0;
+            // minify disable filter delete
             state.boards[state.pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
             state.boards[7] ^= 1ULL << (move >> 4 & 63);
         }
@@ -658,8 +660,8 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
             return staticEval;
 
         alpha = max(alpha, staticEval);
-    } else if (ply > 0) {
-        for (auto i = board.history.size() - 1; i > 1; i -= 2)
+    } else if (ply > 0 && board.history.size() > 1) {
+        for (auto i = board.history.size() - 2; i > 1; i -= 2)
             if (board.state.hash == board.history[i].hash) return 0;
     }
 
