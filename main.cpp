@@ -342,6 +342,9 @@ struct Board {
 
         history.push_back(state);
 
+        state.halfmove++;
+        if (piece == 0) state.halfmove = 0;
+
         // minify enable filter delete
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(state.pieceOn(move >> 4 & 63) < 6);
@@ -349,6 +352,7 @@ struct Board {
 
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
+            state.halfmove = 0;
             state.boards[state.pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
             state.boards[7] ^= 1ULL << (move >> 4 & 63);
         }
@@ -654,6 +658,9 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
             return staticEval;
 
         alpha = max(alpha, staticEval);
+    } else if (ply > 0) {
+        for (auto i = board.history.size() - 1; i > 1; i -= 2)
+            if (board.state.hash == board.history[i].hash) return 0;
     }
 
     auto i = 0;
