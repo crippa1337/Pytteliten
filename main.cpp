@@ -661,8 +661,8 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
 
         alpha = max(alpha, staticEval);
     } else if (ply > 0 && board.history.size() > 1)
-        for (int i = board.history.size() - 2; i >= 0; i -= 2)
-            if (board.state.hash == board.history[i].hash) return 0;
+        for (const auto &i: board.history)
+            if (board.state.hash == i.hash) return 0;
 
     auto i = 0;
     uint16_t moves[256] = {0};
