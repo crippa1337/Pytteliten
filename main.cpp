@@ -173,9 +173,9 @@ struct BoardState {
     // TODO castling rights might be smaller as a bitfield?
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
-    uint32_t halfmove = 0;
     uint64_t hash;
     // minify enable filter delete
+    uint32_t halfmove = 0;
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
     // minify disable filter delete
@@ -343,12 +343,19 @@ struct Board {
         history.push_back(state);
 
         // minify enable filter delete
+        state.halfmove++;
+        if (piece == 0)
+            state.halfmove = 0;
+
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(state.pieceOn(move >> 4 & 63) < 6);
         // minify disable filter delete
 
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
+            // minify enable filter delete
+            state.halfmove = 0;
+            // minify disable filter delete
             state.boards[state.pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
             state.boards[7] ^= 1ULL << (move >> 4 & 63);
         }
@@ -654,7 +661,10 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
             return staticEval;
 
         alpha = max(alpha, staticEval);
-    }
+    } else if (ply > 0 && board.history.size() > 1)
+        for (const auto &i : board.history)
+            if (board.state.hash == i.hash)
+                return 0;
 
     auto i = 0;
     uint16_t moves[256] = {0};
