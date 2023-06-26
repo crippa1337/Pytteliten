@@ -344,7 +344,8 @@ struct Board {
 
         // minify enable filter delete
         state.halfmove++;
-        if (piece == 0) state.halfmove = 0;
+        if (piece == 0)
+            state.halfmove = 0;
 
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(state.pieceOn(move >> 4 & 63) < 6);
