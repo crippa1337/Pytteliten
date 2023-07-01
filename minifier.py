@@ -197,8 +197,7 @@ def minify(content: str):
     tokens = group_tokens(tokens, ['#', 'include'], ['\n'])  # Includes
 
     # Deletion regions
-    tokens = group_tokens(tokens, ['/', '/', ' ', 'minify', ' ', 'enable', ' ', 'filter', ' ', 'delete'],
-                          ['/', '/', ' ', 'minify', ' ', 'disable', ' ', 'filter', ' ', 'delete'])
+    tokens = group_tokens(tokens, ['#', 'ifndef', ' ', 'MINIFIED'], ['#', 'endif'])
 
     tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
     tokens = group_tokens(tokens, ["'"], ["'"])               # Chars
@@ -215,8 +214,12 @@ def minify(content: str):
 
     for token in tokens:
         # # Exclude the token if it is:
-        # Line comments and deletion regions
+
+        # Line comments
         if token.startswith('//'):
+            continue
+        # Deletion region
+        elif token.startswith('#ifndef'):
             continue
         # Block comment
         elif token.startswith('/*'):
