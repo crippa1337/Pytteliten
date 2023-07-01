@@ -1,14 +1,14 @@
 EXE          = pytteliten
 
 SOURCES     := main.cpp
+CXXFLAGS    := -O3 -std=c++20 -Wall -Wextra -pedantic -DNDEBUG -march=native
 
 ifeq ($(MAKECMDGOALS),mini)
-    SOURCES := pytteliten-mini.cpp
-    EXE     := pytteliten-mini
+    SOURCES  := pytteliten-mini.cpp
+    EXE      := pytteliten-mini
+    CXXFLAGS += -DMINIFIED
 endif
 
-
-CXXFLAGS    := -O3 -std=c++20 -Wall -Wextra -pedantic -DNDEBUG -march=native
 
 CXX         := clang++
 SUFFIX      :=

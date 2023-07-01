@@ -5,3 +5,4 @@
 /*.out
 .vscode
 pytteliten*
+.DS_store
