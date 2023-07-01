@@ -132,8 +132,7 @@ def group(tokens: list) -> list:
     tokens = group_tokens(tokens, ['#', 'include'], ['\n'], include_space=False)  # Includes
 
     # Deletion regions
-    tokens = group_tokens(tokens, ['/', '/', ' ', 'minify', ' ', 'enable', ' ', 'filter', ' ', 'delete'],
-                          ['/', '/', ' ', 'minify', ' ', 'disable', ' ', 'filter', ' ', 'delete'])
+    tokens = group_tokens(tokens, ['#', 'ifndef', ' ', 'MINIFIED'], ['#', 'endif'])
 
     tokens = group_tokens(tokens, ['/', '/'], ['\n'], include_end=False)  # Line comments
     tokens = group_tokens(tokens, ["'"], ["'"])               # Chars
@@ -146,7 +145,7 @@ def strip(tokens: list) -> list:
     new_tokens = []
     for token in tokens:
         # line/block comments, deletion regions and attributes
-        if token.startswith('//') or token.startswith('/*') or token.startswith('[['):
+        if token.startswith('//') or token.startswith('/*') or token.startswith('[[') or token.startswith('#ifndef'):
             continue
 
         # newlines, spaces, consts...
