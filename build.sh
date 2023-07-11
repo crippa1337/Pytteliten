@@ -1,5 +1,3 @@
-mkdir -p build
-
 # Delete old version
 if [ -f "./pytteliten-mini" ]; then
     rm ./pytteliten-mini
@@ -11,7 +9,7 @@ python3 minifier.py
 # Compress the source copy
 echo Finding best compression parameters...
 SMALLEST=1000000
-LAUNCHER_SIZE=$(stat -c%s "launcher.sh")
+LAUNCHER_SIZE=$(stat -c%s "src/launcher.sh")
 for MF in hc3 hc4 bt2 bt3 bt4
 do
     for NICE in {4..273}
@@ -27,7 +25,7 @@ do
 done
 
 # Create build script
-cat launcher.sh pytteliten-mini-smallest.cpp.lzma > ./pytteliten-mini
+cat src/launcher.sh pytteliten-mini-smallest.cpp.lzma > ./pytteliten-mini
 
 # Delete compressed sources
 rm -f pytteliten-mini.cpp.lzma

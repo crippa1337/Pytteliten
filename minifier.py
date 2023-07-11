@@ -246,7 +246,7 @@ def minify(content: str):
 
 
 if __name__ == '__main__':
-    with open('main.cpp', 'r') as f:
+    with open('src/main.cpp', 'r') as f:
         src = f.read()
 
         minify(src)
