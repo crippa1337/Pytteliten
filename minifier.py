@@ -14,7 +14,7 @@ KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'vector', 'push
             'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
             'default', 'using', 'namespace', '__builtin_popcountll', 'stoi', 'chrono', 'second',
             'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater']
-
+ARGS = "ABCDEFG"
 global counter, resets
 counter = 72  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -165,6 +165,57 @@ def find_functions(tokens: list) -> list:
     return functions
 
 
+#def rename_args(tokens: list) -> list:
+#    new_tokens = []
+#
+#    functions = find_functions(tokens)
+#    entering_function = False
+#    in_function = False
+#    args = dict()
+#    parenth_depth = 0
+#    scope = 0
+#
+#    for (i, token) in enumerate(tokens):
+#        # Handle exiting function
+#        if in_function:
+#            if token == '{':
+#                scope += 1
+#            elif token == '}':
+#                scope -= 1
+#
+#            if scope == 0:
+#                in_function = False
+#                args = dict()
+#
+#         # record args and rename them
+#        if entering_function:
+#            if token == '(':
+#                parenth_depth += 1
+#            elif token == ')':
+#                parenth_depth -= 1
+#            elif parenth_depth == 1 and tokens[i + 1] in [',', ')'] and token not in TYPES:
+#                num_args = len(args)
+#                args[token] = ARGS[num_args]
+#
+#        # No longer in function args, now in the function itself
+#        if entering_function and parenth_depth == 0:
+#            print(args)
+#            entering_function = False
+#            in_function = True
+#
+#        # Are we entering a function?
+#        if token in functions and not in_function:
+#            print(token)
+#            entering_function = True
+#
+#        if token in args:
+#            token = args[token]
+#
+#        new_tokens.append(token)
+#
+#    return new_tokens
+
+
 def minify(content: str):
     tokens = fetch_tokens(content)
     tokens = group(tokens)
@@ -209,7 +260,7 @@ def minify(content: str):
                 parenth_depth -= 1
             elif parenth_depth == 1 and tokens[i + 1] in [',', ')'] and token not in TYPES:
                 num_args = len(args)
-                args[token] = "ABCDEFG"[num_args]
+                args[token] = ARGS[num_args]
 
         # No longer in function args, now in the function itself
         if entering_function and parenth_depth == 0:
