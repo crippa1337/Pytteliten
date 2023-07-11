@@ -1,5 +1,3 @@
-mkdir -p build
-
 # Delete old version
 if [ -f "./pytteliten-mini" ]; then
     rm ./pytteliten-mini
