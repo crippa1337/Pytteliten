@@ -198,13 +198,11 @@ def rename_args(tokens: list) -> list:
 
         # No longer in function args, now in the function itself
         if entering_function and parenth_depth == 0:
-            #print(args)
             entering_function = False
             in_function = True
 
         # Are we entering a function?
         if token in functions and not in_function:
-            #print(token)
             entering_function = True
 
         if token in args:
@@ -250,7 +248,7 @@ def minify(content: str):
     # generate names in order of frequency
     for token in freq:
         names[token] = generate_name(token)
-        print(f"{token: >20}:   {names[token]}")
+        print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
 
     for token in tokens:
         # Add a seperator between tokens that can't be attached to each other.
