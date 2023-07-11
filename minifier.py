@@ -7,15 +7,16 @@ import re
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-KEYWORDS = ['int', 'return', 'printf', 'struct', 'main', 'std', 'uint16_t', 'uint32_t', 'uint64_t', 'vector',
-            'push_back', 'back', 'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'auto',
-            'const', 'assert', 'endl', 'for', 'while', 'swap', 'bool', 'if', 'else', 'void', 'string', 'char', 'abs',
-            'getline', 'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
-            'default', 'using', 'namespace', 'int32_t', '__builtin_popcountll', 'stoi', 'chrono', 'second',
+TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t', 'bool', 'auto', 'int32_t', ]
+KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'vector', 'push_back', 'back',
+            'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'const', 'assert',
+            'endl', 'for', 'while', 'swap', 'if', 'else', 'string', 'char', 'abs', 'getline',
+            'split', 'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
+            'default', 'using', 'namespace', '__builtin_popcountll', 'stoi', 'chrono', 'second',
             'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater']
 
 global counter, resets
-counter = 65  # ASCII A
+counter = 72  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
 
 
@@ -48,31 +49,9 @@ def fetch_tokens(content: str) -> list:
     return [t for t in re.split('([^\w])', content) if t]
 
 
-assert fetch_tokens('int main() { return 0; }') == [
-    'int', ' ', 'main', '(', ')', ' ', '{', ' ', 'return', ' ', '0', ';', ' ', '}']
-assert fetch_tokens('hehe = 1;') == ['hehe', ' ', '=', ' ', '1', ';']
-assert fetch_tokens('a_very_long_variable_name') == [
-    'a_very_long_variable_name']
-assert fetch_tokens("test\t\ntest") == ["test", "\t", "\n", "test"]
-
-
 def is_name(token: str) -> bool:
     """A name of /something/. Either a variable, function, class, etc."""
     return token and (token[0].isalpha() or token.startswith('_'))
-
-
-assert is_name('a')
-assert is_name('a_')
-assert is_name('a_1')
-assert is_name('__AA')
-assert is_name('variable')
-assert is_name('my_favorite_number_100000')
-assert is_name('int')
-assert not is_name('123')
-assert not is_name('1a2b3c')
-assert not is_name('')
-assert not is_name(' ')
-assert not is_name('\n')
 
 
 def is_keyword(token: str) -> bool:
@@ -85,15 +64,6 @@ def renamable(token: str) -> bool:
     return not is_keyword(token) and is_name(token)
 
 
-assert renamable('abcdefg')
-assert renamable('a')
-assert renamable('a_123')
-assert not renamable('main')
-assert not renamable('int')
-assert not renamable('return')
-assert not renamable('1000')
-
-
 def attach_eligible(token: str) -> bool:
     """Returns whether a token is eligible to be attached together to save whitespace."""
     # Some c++ numbers have suffixes like 1ULL which is 1 as an unsigned long long.
@@ -101,27 +71,9 @@ def attach_eligible(token: str) -> bool:
     return token and not (is_name(token) or token[0].isnumeric())
 
 
-assert attach_eligible(')')
-assert attach_eligible('+')
-assert attach_eligible('{')
-assert not attach_eligible('a_name')
-assert not attach_eligible('1')
-assert not attach_eligible('main')
-
-
 def attachable_tokens(first: str, second: str) -> bool:
     """Returns whether two tokens can be attached together to save whitespace."""
     return attach_eligible(first) or attach_eligible(second)
-
-
-assert attachable_tokens('1', '+')
-assert attachable_tokens('{', '}')
-assert attachable_tokens('(', ')')
-assert attachable_tokens('{', 'printf')
-assert attachable_tokens('coolboy99', '+')
-assert not attachable_tokens('int', 'main')
-assert not attachable_tokens('1', '2')
-assert not attachable_tokens('return', '0')
 
 
 def group_tokens(token_list: list, start: list, end: list, include_end: bool = True) -> list:
@@ -165,31 +117,7 @@ def group_tokens(token_list: list, start: list, end: list, include_end: bool = T
     return output
 
 
-assert group_tokens(["a", "b", "c", "d"], ["a"], ["b"]) == ["ab", "c", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["b"], ["c"]) == ["a", "bc", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["c"], ["d"]) == ["a", "b", "cd"]
-assert group_tokens(["a", "b", "c", "d"], ["a"], ["d"]) == ["abcd"]
-assert group_tokens(["a", "b", "c", "d"], ["c"], [
-    "b"]) == ["a", "b", "c", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["b"], [
-    "e"]) == ["a", "b", "c", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["b"], [
-    "b"]) == ["a", "b", "c", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["a", "b"], ["c"]) == ["abc", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["a"], ["b", "c"]) == ["abc", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["a", "b", "c"], ["d"]) == ["abcd"]
-assert group_tokens(["a", "b", "c", "d"], ["a"], ["c"], True) == ["abc", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["a"], [
-    "c"], False) == ["ab", "c", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["c"], [
-    "e"]) == ["a", "b", "c", "d"]
-assert group_tokens(["a", "b", "c", "d"], ["e"], [
-    "c"]) == ["a", "b", "c", "d"]
-
-
-def minify(content: str):
-    tokens = fetch_tokens(content)
-
+def group(tokens: list) -> list:
     # Create token groups such as comments, strings, etc.
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
@@ -203,8 +131,56 @@ def minify(content: str):
     tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
     tokens = group_tokens(tokens, ["'"], ["'"])               # Chars
 
+    return tokens
+
+
+def strip(tokens: list) -> list:
+    new_tokens = []
+    for token in tokens:
+        # line/block comments, deletion regions and attributes
+        if token.startswith('//') or token.startswith('/*') or token.startswith('[['):
+            continue
+
+        # newlines, spaces, consts...
+        if token == '\n' or token.isspace() or token == 'const':
+            continue
+
+        new_tokens.append(token)
+
+    return new_tokens
+
+
+def find_functions(tokens: list) -> list:
+    functions = []
+    prev = None
+
+    for i, token in enumerate(tokens):
+        following = tokens[i + 1] if i + 1 < len(tokens) else None
+
+        if prev in TYPES and following == '(':
+            functions.append(token)
+
+        prev = token
+
+    return functions
+
+
+def minify(content: str):
+    tokens = fetch_tokens(content)
+    tokens = group(tokens)
+    tokens = strip(tokens)
+
+    functions = find_functions(tokens)
+
     new_tokens = []
     prev = None
+
+    # Function stuff
+    entering_function = False
+    in_function = False
+    args = dict()
+    parenth_depth = 0
+    scope = 0
 
     # Replace true and false with 1 and 0
     names['true'] = '1'
@@ -213,21 +189,38 @@ def minify(content: str):
     for kw in KEYWORDS:
         names[kw] = kw
 
-    for token in tokens:
-        # # Exclude the token if it is:
-        # Line comments and deletion regions
-        if token.startswith('//'):
-            continue
-        # Block comment
-        elif token.startswith('/*'):
-            continue
-        # Attribute
-        elif token.startswith('[['):
-            continue
+    for (i, token) in enumerate(tokens):
+        # Handle exiting function
+        if in_function:
+            if token == '{':
+                scope += 1
+            elif token == '}':
+                scope -= 1
 
-        # Exclude newlines, spaces, consts...
-        if token == '\n' or token.isspace() or token == 'const':
-            continue
+            if scope == 0:
+                in_function = False
+                args = dict()
+
+         # record args and rename them
+        if entering_function:
+            if token == '(':
+                parenth_depth += 1
+            elif token == ')':
+                parenth_depth -= 1
+            elif parenth_depth == 1 and tokens[i + 1] in [',', ')'] and token not in TYPES:
+                num_args = len(args)
+                args[token] = "ABCDEFG"[num_args]
+
+        # No longer in function args, now in the function itself
+        if entering_function and parenth_depth == 0:
+            print(args)
+            entering_function = False
+            in_function = True
+
+        # Are we entering a function?
+        if token in functions and not in_function:
+            print(token)
+            entering_function = True
 
         # Add a seperator between tokens that can't be attached to each other.
         # For example: Two names (int main)
@@ -235,7 +228,9 @@ def minify(content: str):
             new_tokens.append(' ')
 
         # If the token is a name, but not a keyword, we mangle it.
-        if renamable(token):
+        if token in args:
+            token = args[token]
+        elif renamable(token):
             token = generate_name(token)
 
         prev = token
@@ -244,8 +239,72 @@ def minify(content: str):
     with open('pytteliten-mini.cpp', 'w') as f:
         f.write(''.join(new_tokens))
 
-
 if __name__ == '__main__':
+    assert fetch_tokens('int main() { return 0; }') == [
+    'int', ' ', 'main', '(', ')', ' ', '{', ' ', 'return', ' ', '0', ';', ' ', '}']
+    assert fetch_tokens('hehe = 1;') == ['hehe', ' ', '=', ' ', '1', ';']
+    assert fetch_tokens('a_very_long_variable_name') == [
+        'a_very_long_variable_name']
+    assert fetch_tokens("test\t\ntest") == ["test", "\t", "\n", "test"]
+
+    assert is_name('a')
+    assert is_name('a_')
+    assert is_name('a_1')
+    assert is_name('__AA')
+    assert is_name('variable')
+    assert is_name('my_favorite_number_100000')
+    assert is_name('int')
+    assert not is_name('123')
+    assert not is_name('1a2b3c')
+    assert not is_name('')
+    assert not is_name(' ')
+    assert not is_name('\n')
+
+    assert renamable('abcdefg')
+    assert renamable('a')
+    assert renamable('a_123')
+    assert not renamable('main')
+    assert not renamable('int')
+    assert not renamable('return')
+    assert not renamable('1000')
+
+    assert attach_eligible(')')
+    assert attach_eligible('+')
+    assert attach_eligible('{')
+    assert not attach_eligible('a_name')
+    assert not attach_eligible('1')
+    assert not attach_eligible('main')
+
+    assert attachable_tokens('1', '+')
+    assert attachable_tokens('{', '}')
+    assert attachable_tokens('(', ')')
+    assert attachable_tokens('{', 'printf')
+    assert attachable_tokens('coolboy99', '+')
+    assert not attachable_tokens('int', 'main')
+    assert not attachable_tokens('1', '2')
+    assert not attachable_tokens('return', '0')
+
+    assert group_tokens(["a", "b", "c", "d"], ["a"], ["b"]) == ["ab", "c", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["b"], ["c"]) == ["a", "bc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["c"], ["d"]) == ["a", "b", "cd"]
+    assert group_tokens(["a", "b", "c", "d"], ["a"], ["d"]) == ["abcd"]
+    assert group_tokens(["a", "b", "c", "d"], ["c"], [
+        "b"]) == ["a", "b", "c", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["b"], [
+        "e"]) == ["a", "b", "c", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["b"], [
+        "b"]) == ["a", "b", "c", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["a", "b"], ["c"]) == ["abc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["a"], ["b", "c"]) == ["abc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["a", "b", "c"], ["d"]) == ["abcd"]
+    assert group_tokens(["a", "b", "c", "d"], ["a"], ["c"], True) == ["abc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["a"], [
+        "c"], False) == ["ab", "c", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["c"], [
+        "e"]) == ["a", "b", "c", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["e"], [
+        "c"]) == ["a", "b", "c", "d"]
+
     with open('main.cpp', 'r') as f:
         src = f.read()
 
