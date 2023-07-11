@@ -17,4 +17,4 @@ the tournament standards of TCEC 4K. The minifier is not a universal C++ minifie
 ## Contributions
 Development is mainly centered in the ``#pytteliten`` channel at the [Engine Programming Discord server](https://discord.com/invite/F6W6mMsTGN).
 
-Contributions must be formatted with the ``.clang-format`` in the source and be compileable after minification. GitHub jobs handle these checks.
+Contributions must be formatted with the ``.clang-format`` in the source, using the command ``clang-format --style=file -i src/main.cpp``, and be compileable after minification. GitHub jobs handle these checks.

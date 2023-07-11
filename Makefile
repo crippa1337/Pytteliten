@@ -1,6 +1,6 @@
 EXE          = pytteliten
 
-SOURCES     := main.cpp
+SOURCES     := src/main.cpp
 
 ifeq ($(MAKECMDGOALS),mini)
     SOURCES := pytteliten-mini.cpp
