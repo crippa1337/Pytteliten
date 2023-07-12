@@ -5,7 +5,8 @@ Currently developed for the sole purpose of competing in the [TCEC 4K](https://w
 <br>
 
 ## How does it work?
-Pytteliten is currently just one ``.cpp`` file that is read by the minifier and remade into an identically behaving but vastly smaller source.
+Pytteliten is currently just one ``.cpp`` file that is read by the minifier and remade into an identically behaving but vastly smaller source -
+see [here](minifier/minifier.md) for a more detailed explanation of how the minifier works.
 This minified source is appended to a launch script by the build script. When the launch script is run, it will compile an execute the minified source.
 Together it's the launch script as well as the minified source that is counted towards the 4kB limit.
 
