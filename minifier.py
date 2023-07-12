@@ -9,8 +9,8 @@ import subprocess
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t', 'bool', 'auto', 'int32_t', 'string', 'istringstream']
-KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'vector', 'push_back', 'back',
+TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t', 'bool', 'auto', 'int32_t', 'string', 'vector', 'istringstream']
+KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'push_back', 'back',
             'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'const', 'assert',
             'endl', 'for', 'while', 'swap', 'if', 'else', 'char', 'abs', 'getline',
             'break', 'length', 'switch', 'case', 'cin', 'empty', 'continue', 'size',
