@@ -165,6 +165,15 @@ class Struct:
         self.name = name
 
 
+@dataclass
+class Function:
+    args: dict()
+    variables: dict()
+
+    def __init__(self):
+        self.args = dict()
+        self.variables = dict()
+
 def get_stats(tokens: list) -> dict:
     entering_struct = False
     entering_function = False
@@ -175,6 +184,8 @@ def get_stats(tokens: list) -> dict:
     parenth_depth = 0
     structinfo = {None: Struct("Top Level")}
     prev = None
+    functions = set()
+    fields = set()
 
     for i, token in enumerate(tokens):
         # Handle exiting function
@@ -194,7 +205,7 @@ def get_stats(tokens: list) -> dict:
             elif token == ')':
                 parenth_depth -= 1
             elif parenth_depth > 0 and tokens[i + 1] in [',', ')'] and token not in TYPES:
-                structinfo[struct].functions[function][token] = 1
+                structinfo[struct].functions[function].args[token] = 1
             if parenth_depth == 0:
                 entering_function = False
 
@@ -204,11 +215,21 @@ def get_stats(tokens: list) -> dict:
         if prev in TYPES and following == '(':
             entering_function = True
             function = token
-            structinfo[struct].functions[token] = dict()
+            functions.add(token)
+            structinfo[struct].functions[token] = Function()
 
-        # Found a function arg
-        if function != None and token in structinfo[struct].functions[function]:
-            structinfo[struct].functions[function][token] += 1
+        if function != None:
+            # Found function arg
+            if token in structinfo[struct].functions[function].args:
+                structinfo[struct].functions[function].args[token] += 1
+
+            # Found local variable
+            if token in structinfo[struct].functions[function].variables:
+                structinfo[struct].functions[function].variables[token] += 1
+
+            # Found declaration of local variable
+            if not entering_function and is_name(token) and (prev in TYPES or prev in structinfo):
+                structinfo[struct].functions[function].variables[token] = 1
 
         # Exiting struct?
         if struct != None:
@@ -234,7 +255,8 @@ def get_stats(tokens: list) -> dict:
             is_keyword(token) or token in structinfo[struct].functions or token.startswith("arg")
             or token in ['true', 'false'] or token in structinfo
         ):
-            structinfo[struct].fields[token] = 1
+            structinfo[struct].fields[token] = 0
+            fields.add(token)
 
         if token in structinfo[struct].fields:
             structinfo[struct].fields[token] += 1
@@ -284,10 +306,10 @@ def get_ir_renames(structinfo: dict):
             if struct != None:
                 methods[func] = "func" + str(x)
 
-            ir[struct].functions[func] = dict()
-            sorted_func = sort_dict(structinfo[struct].functions[func])
+            ir[struct].functions[func] = Function()
+            sorted_func = sort_dict(structinfo[struct].functions[func].args)
             for y, arg in enumerate(sorted_func):
-                ir[struct].functions[func][arg] = "arg" + str(y)
+                ir[struct].functions[func].args[arg] = "arg" + str(y)
 
         for func in structinfo[struct].top_lvl_used:
             top_lvl_used.add(func)
@@ -357,12 +379,15 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
         if token == "struct":
             entering_struct = True
 
-        if function != None and token in ir[struct].functions[function]:
-                token = ir[struct].functions[function][token]
+        # Rename if appropriate
+        if function != None and token in ir[struct].functions[function].args:
+            token = ir[struct].functions[function].args[token]
         elif token in fields:
             token = fields[token]
         elif token in methods:
             token = methods[token]
+        elif function != None and token in ir[struct].functions[function].variables:
+            token = ir[struct].functions[function].variables[token]
 
         new_tokens.append(token)
 
