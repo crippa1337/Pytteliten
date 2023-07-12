@@ -6,13 +6,14 @@ up and outputting the minified source to a file.
 
 ## Passes
 
-1. Grouping - This pass (technically there is one per grouping) groups together subsets of the tokens into single tokens, for example collecting strings that were initially separated into one token, or collecting a whole deletion region into one token.
+1. Grouping - This pass (technically there is one per grouping) groups together subsets of the tokens into single
+tokens, for example collecting strings that were initially separated into one token, or collecting a whole deletion region into one token.
 
 2. Stripping - This pass simply removes all code that does not need to be present in the final code, such as deletion regions, newline delimiters and comments.
 
 3. Gathering Statistics - Thanks to the requirements of how C++ files are laid out, in this
 single pass we can determine the structure of the program (example shown below) as well as detailed
-statistics about how often different kinds of tokens dissapear in different contexts.
+statistics about how often different kinds of tokens appear in different contexts.
 
 4. Intermediate Representation - Here all functions, function arguments, local variables
 defined in functions and struct fields and methods are renamed into generic "{type}{num}" form,
@@ -26,7 +27,7 @@ all the renamable tokens to smaller single-letter tokens.
 
 ## What to add next?
 
-Most potential gains are probably to come from additional passes between pass 5 and 6, at the
+Most potential gains are probably to come from additional passes between pass 4 and 5, at the
 moment different types of token `var`, `arg`, etc are almost completely separate, and so most often
 use distinct identifiers from each other, when they could potentially share them.
 It would be pretty funny to see `a.a.a.a()` or something similar in the minified source.
