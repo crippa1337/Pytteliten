@@ -26,7 +26,7 @@ OUT := $(EXE)$(SUFFIX)
 all: $(EXE)
 
 minify:
-	python3 minifier.py
+	python3 minifier/minifier.py
 
 mini: minify $(EXE)
 
