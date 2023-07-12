@@ -416,7 +416,7 @@ def minify(content: str):
     tokens = strip(tokens)
 
     structinfo = get_stats(tokens)
-    print_stats(structinfo)
+    #print_stats(structinfo)
 
     ir, fields, methods = get_ir_renames(structinfo)
     tokens = to_ir(tokens, ir, fields, methods)
@@ -458,7 +458,7 @@ def minify(content: str):
     freq = get_frequencies(tokens)
     for token in freq:
         names[token] = generate_name(token)
-        print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
+        #print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
 
     for token in tokens:
         # Add a seperator between tokens that can't be attached to each other.
