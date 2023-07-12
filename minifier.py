@@ -234,7 +234,7 @@ class Struct:
 class Function:
     args: dict()
 
-def get_stats(tokens: list) -> tuple[list, dict]:
+def get_stats(tokens: list) -> dict:
     entering_struct = False
     entering_function = False
     struct = None
