@@ -194,7 +194,7 @@ def get_stats(tokens: list) -> dict:
                 parenth_depth += 1
             elif token == ')':
                 parenth_depth -= 1
-            elif parenth_depth == 1 and tokens[i + 1] in [',', ')'] and token not in TYPES:
+            elif parenth_depth > 0 and tokens[i + 1] in [',', ')'] and token not in TYPES:
                 structinfo[struct].functions[function][token] = 1
             if parenth_depth == 0:
                 entering_function = False
