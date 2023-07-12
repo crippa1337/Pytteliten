@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from collections import defaultdict
-import pprint
+import subprocess
 
 #################
 # Name mangling #
@@ -264,11 +264,20 @@ def get_stats(tokens: list) -> dict:
     return structinfo
 
 
+def print_stats(structinfo: dict):
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    for struct in structinfo:
+        print(struct)
+        pp.pprint(structinfo[struct])
+        print("")
+
+
 def sort_dict(dictionary: dict) -> dict:
     return {k: v for k, v in sorted(dictionary.items(), key=lambda item: -item[1])}
 
 
-def get_ir(structinfo: dict):
+def get_ir_renames(structinfo: dict):
     ir = dict()
     fields = dict()
     methods = dict()
@@ -290,7 +299,7 @@ def get_ir(structinfo: dict):
         k = 0
         for x, func in enumerate(structinfo[struct].functions):
             if struct != None:
-                methods[func] = "method" + str(x)
+                methods[func] = "func" + str(x)
 
             ir[struct].functions[func] = dict()
             sorted_func = sort_dict(structinfo[struct].functions[func])
@@ -308,10 +317,10 @@ def get_ir(structinfo: dict):
         else:
             if func in methods:
                 continue
-            methods[func] = "main" if func == "main" else "method" + str(j)
+            methods[func] = "main" if func == "main" else "func" + str(j)
             j += 1
 
-    return (ir, fields, methods)
+    return ir, fields, methods
 
 
 def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
@@ -394,23 +403,24 @@ def minify(content: str):
     tokens = group(tokens)
     tokens = strip(tokens)
     structinfo = get_stats(tokens)
-    (ir, fields, methods) = get_ir(structinfo)
-
-    #pp = pprint.PrettyPrinter(indent=4)
-    #for struct in structinfo:
-    #    print("")
-    #    pp.pprint(ir[struct])
-    #print("")
-    #print("Struct Fields:")
-    #pp.pprint(fields)
-    #print("")
-    #print("Functions & Struct Methods:")
-    #pp.pprint(methods)
-
+    ir, fields, methods = get_ir_renames(structinfo)
     tokens = to_ir(tokens, ir, fields, methods)
 
-    freq = get_frequencies(tokens)
+    print_stats(structinfo)
 
+    # Write IR to file, for easier debugging
+    prev = None
+    ir_tokens = []
+    for token in tokens:
+        if prev and not attachable_tokens(prev, token):
+            ir_tokens.append(' ')
+        prev = token
+        ir_tokens.append(token)
+    with open('plir.cpp', 'w') as f:
+        f.write(''.join(ir_tokens))
+    subprocess.run(["clang-format", "--style=file", "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
+
+    # Now the real minifying begins
     new_tokens = []
     prev = None
 
@@ -418,10 +428,12 @@ def minify(content: str):
     names['true'] = '1'
     names['false'] = '0'
 
+    # Don't rename keywords
     for kw in KEYWORDS:
         names[kw] = kw
 
-    # generate names in order of frequency
+    # Generate names in order of frequency
+    freq = get_frequencies(tokens)
     for token in freq:
         names[token] = generate_name(token)
         print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
