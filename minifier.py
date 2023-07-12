@@ -418,7 +418,15 @@ def minify(content: str):
         ir_tokens.append(token)
     with open('plir.cpp', 'w') as f:
         f.write(''.join(ir_tokens))
-    subprocess.run(["clang-format", "--style=file", "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
+
+    # Make it look nice
+    try:
+        subprocess.run(["clang-format", "--style=file", "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
+    except:
+        try:
+            subprocess.run(["./clang-format", "--style=file", "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
+        except:
+            pass
 
     # Now the real minifying begins
     new_tokens = []
