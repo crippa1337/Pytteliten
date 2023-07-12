@@ -174,6 +174,7 @@ class Function:
         self.args = dict()
         self.variables = dict()
 
+
 def get_stats(tokens: list) -> dict:
     entering_struct = False
     entering_function = False
@@ -187,7 +188,7 @@ def get_stats(tokens: list) -> dict:
 
     for i, token in enumerate(tokens):
         # Handle exiting function
-        if not entering_function and function != None:
+        if not entering_function and function is not None:
             if token == '{':
                 function_scope += 1
             elif token == '}':
@@ -215,7 +216,7 @@ def get_stats(tokens: list) -> dict:
             function = token
             structinfo[struct].functions[token] = Function()
 
-        if function != None:
+        if function is not None:
             # Found function arg
             if token in structinfo[struct].functions[function].args:
                 structinfo[struct].functions[function].args[token] += 1
@@ -229,7 +230,7 @@ def get_stats(tokens: list) -> dict:
                 structinfo[struct].functions[function].variables[token] = 1
 
         # Exiting struct?
-        if struct != None:
+        if struct is not None:
             if token == '{':
                 struct_scope += 1
             elif token == '}':
@@ -248,7 +249,7 @@ def get_stats(tokens: list) -> dict:
             entering_struct = True
 
         # Found a struct field
-        if struct_scope == 1 and is_name(token) and function == None and not (
+        if struct_scope == 1 and is_name(token) and function is None and not (
             is_keyword(token) or token in structinfo[struct].functions or token.startswith("arg")
             or token in ['true', 'false'] or token in structinfo
         ):
@@ -258,7 +259,7 @@ def get_stats(tokens: list) -> dict:
             structinfo[struct].fields[token] += 1
 
         # Record what top level functions are used in each struct
-        if token in structinfo[None].functions and token not in structinfo[struct].top_lvl_used and struct != None:
+        if token in structinfo[None].functions and token not in structinfo[struct].top_lvl_used and struct is not None:
             structinfo[struct].top_lvl_used.append(token)
 
         prev = token
@@ -299,7 +300,7 @@ def get_ir_renames(structinfo: dict):
             j += 1
 
         for x, func in enumerate(structinfo[struct].functions):
-            if struct != None:
+            if struct is not None:
                 methods[func] = "func" + str(x)
 
             ir[struct].functions[func] = Function()
@@ -353,7 +354,7 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
             if parenth_depth == 0:
                 entering_function = False
 
-        if token in methods and function == None:
+        if token in methods and function is None:
             function = token
             entering_function = True
 
@@ -376,13 +377,13 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
             entering_struct = True
 
         # Rename if appropriate
-        if function != None and token in ir[struct].functions[function].args:
+        if function is not None and token in ir[struct].functions[function].args:
             token = ir[struct].functions[function].args[token]
         elif token in fields:
             token = fields[token]
         elif token in methods:
             token = methods[token]
-        elif function != None and token in ir[struct].functions[function].variables:
+        elif function is not None and token in ir[struct].functions[function].variables:
             token = ir[struct].functions[function].variables[token]
 
         new_tokens.append(token)
@@ -469,7 +470,7 @@ def minify(content: str):
 
 if __name__ == '__main__':
     assert fetch_tokens('int main() { return 0; }') == [
-    'int', ' ', 'main', '(', ')', ' ', '{', ' ', 'return', ' ', '0', ';', ' ', '}']
+        'int', ' ', 'main', '(', ')', ' ', '{', ' ', 'return', ' ', '0', ';', ' ', '}']
     assert fetch_tokens('hehe = 1;') == ['hehe', ' ', '=', ' ', '1', ';']
     assert fetch_tokens('a_very_long_variable_name') == [
         'a_very_long_variable_name']
