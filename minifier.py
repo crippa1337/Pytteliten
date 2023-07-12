@@ -1,4 +1,7 @@
 import re
+from dataclasses import dataclass
+from collections import defaultdict
+import pprint
 
 #################
 # Name mangling #
@@ -186,7 +189,7 @@ def rename_args(tokens: list) -> list:
                 in_function = False
                 args = dict()
 
-         # Record args and rename them
+        # Record args and rename them
         if entering_function:
             if token == '(':
                 parenth_depth += 1
@@ -213,87 +216,117 @@ def rename_args(tokens: list) -> list:
 
     return new_tokens
 
+def inc(lookup: dict(), key: any) -> int:
+    (lookup[key] + 1) if key in lookup else 0
 
-def rename_struct_funcs(tokens: list) -> tuple[list, dict]:
-    functions = find_functions(tokens)
-    renames = dict()
-    new_tokens = []
-    top_level_counter = 0
+@dataclass
+class Struct:
+    fields: list
+    functions: list
+    top_lvl_used: list
+
+    def __init__(self):
+        self.fields = dict()
+        self.functions = dict()
+        self.top_lvl_used = []
+
+@dataclass
+class Function:
+    args: dict()
+
+def get_stats(tokens: list) -> tuple[list, dict]:
     entering_struct = False
+    entering_function = False
     struct = None
-    struct_counter = 0
-    scope = 0
-    structinfo = dict()
-    top_levels = []
+    function = None
+    struct_scope = 0
+    function_scope = 0
+    parenth_depth = 0
+    structinfo = {None: Struct()}
+    prev = None
 
-    for token in tokens:
+    for i, token in enumerate(tokens):
+        # Handle exiting function
+        if not entering_function and function != None:
+            if token == '{':
+                function_scope += 1
+            elif token == '}':
+                function_scope -= 1
+
+            if function_scope == 0:
+                function = None
+
+        # Record args and rename them
+        if entering_function:
+            if token == '(':
+                parenth_depth += 1
+            elif token == ')':
+                parenth_depth -= 1
+            elif parenth_depth == 1 and tokens[i + 1] in [',', ')'] and token not in TYPES:
+                structinfo[struct].functions[function][token] = 1
+            if parenth_depth == 0:
+                entering_function = False
+
+        # Found a function
+        # TODO: Not rely on types
+        following = tokens[i + 1] if i + 1 < len(tokens) else None
+        if prev in TYPES and following == '(':
+            entering_function = True
+            function = token
+            structinfo[struct].functions[token] = dict()
+
+        # Found a function arg
+        if function != None and token in structinfo[struct].functions[function]:
+            structinfo[struct].functions[function][token] += 1
+
         # Record scope depth in struct so
         # can tell when we've exited it
         if struct != None:
             if token == '{':
-                scope += 1
+                struct_scope += 1
             elif token == '}':
-                scope -= 1
-            if scope == 0:
+                struct_scope -= 1
+            if struct_scope == 0:
                 struct = None
-                struct_counter = 0
+                #struct_counter = 0
 
         # We've got the struct name
         if entering_struct:
             entering_struct = False
             struct = token
-            structinfo[struct] = {"fields": [], "functions": [], "top level used": []}
+            structinfo[struct] = Struct()
 
         # About to be in a struct
         if token == "struct":
             entering_struct = True
 
-        # Found a struct field, we can't rename it just yet because
-        # you can define fields below where they are used
-        if scope == 1 and is_name(token) and not (
-            is_keyword(token) or token in functions or token.startswith("arg") or token in ['true', 'false']
+        # Found a struct field
+        if struct_scope == 1 and is_name(token) and function == None and not (
+            is_keyword(token) or token in structinfo[struct].functions or token.startswith("arg")
+            or token in ['true', 'false'] or token in structinfo
         ):
-            structinfo[struct]["fields"].append(token)
+            structinfo[struct].fields[token] = 1
 
-        if token in functions and not is_keyword(token):
-            # If a function has not been seen before
-            # - Takes advantage of the fact that in C++ functions
-            #   must be declared above where they're used
-            if token not in renames:
-                if struct != None:
-                    # Can immediately rename struct methods
-                    renames[token] = "func" + str(struct_counter)
-                    structinfo[struct]["functions"].append(token)
-                    struct_counter += 1
-                else:
-                    # Can't rename top-level functions just yet, as they
-                    # may clash with methods in structs
-                    renames[token] = token
-                    top_levels.append(token)
-                    top_level_counter += 1
-
-            token = renames[token]
+        if token in structinfo[struct].fields:
+            structinfo[struct].fields[token] += 1
 
         # Record what top level functions are used in each struct
-        if token in top_levels and struct != None:
-            structinfo[struct]["top level used"].append(token)
+        if token in structinfo[None].functions and token not in structinfo[struct].top_lvl_used and struct != None:
+            structinfo[struct].top_lvl_used.append(token)
 
-        new_tokens.append(token)
+        prev = token
 
-    return (new_tokens, structinfo)
+    return structinfo
 
 
 def get_frequencies(tokens: list) -> dict:
-    freq = dict()
+    freq = defaultdict(int)
 
     for token in tokens:
         if not renamable(token):
             continue
 
-        if token in freq:
-            freq[token] += 1
-        else:
-            freq[token] = 1
+        freq[token] += 1
 
     return {k: v for k, v in sorted(freq.items(), key=lambda item: -item[1])}
 
@@ -302,13 +335,13 @@ def minify(content: str):
     tokens = fetch_tokens(content)
     tokens = group(tokens)
     tokens = strip(tokens)
-    tokens = rename_args(tokens)
-    (tokens, structinfo) = rename_struct_funcs(tokens)
+    #tokens = rename_args(tokens)
+    structinfo = get_stats(tokens)
 
+    pp = pprint.PrettyPrinter(indent=4)
     for struct in structinfo:
         print(f"{struct}:")
-        for thing in structinfo[struct]:
-            print(f"     {thing}: {structinfo[struct][thing]}")
+        pp.pprint(structinfo[struct])
 
     freq = get_frequencies(tokens)
 
@@ -323,9 +356,9 @@ def minify(content: str):
         names[kw] = kw
 
     # generate names in order of frequency
-    for token in freq:
-        names[token] = generate_name(token)
-        print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
+    #for token in freq:
+    #    names[token] = generate_name(token)
+        #print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
 
     for token in tokens:
         # Add a seperator between tokens that can't be attached to each other.
@@ -335,10 +368,14 @@ def minify(content: str):
 
         # If the token is a name, but not a keyword, we mangle it.
         if renamable(token):
-            token = names[token]
+            token = generate_name(token)#names[token]
 
         prev = token
         new_tokens.append(token)
+
+    for token in names:
+        if not is_keyword(token):
+            print(f"{token: <18}: {names[token]}")
 
     with open('pytteliten-mini.cpp', 'w') as f:
         f.write(''.join(new_tokens))
