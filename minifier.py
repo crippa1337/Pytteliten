@@ -183,8 +183,11 @@ def preceded_by_type(info: dict, prev: str, prev_prev: str) -> bool:
     return is_type(info, prev) or (prev == '>' and is_type(info, prev_prev))
 
 
+def scope_change(token: str, opener: str, closer: str) -> int:
+    return (token == opener) - (token == closer)
+
+
 def get_stats(tokens: list) -> dict:
-    entering_struct = False
     entering_function = False
     struct = None
     function = None
@@ -198,11 +201,7 @@ def get_stats(tokens: list) -> dict:
     for i, token in enumerate(tokens):
         # Handle exiting function
         if not entering_function and function is not None:
-            if token == '{':
-                function_scope += 1
-            elif token == '}':
-                function_scope -= 1
-
+            function_scope += scope_change(token, '{', '}')
             if function_scope == 0:
                 function = None
 
@@ -218,10 +217,8 @@ def get_stats(tokens: list) -> dict:
                 entering_function = False
 
         # Found a function
-        # TODO: Not rely on types
         following = tokens[i + 1] if i + 1 < len(tokens) else None
         if is_name(token) and preceded_by_type(structinfo, prev, prev_prev) and following == '(':
-            print(token)
             entering_function = True
             function = token
             structinfo[struct].functions[token] = Function()
@@ -241,22 +238,14 @@ def get_stats(tokens: list) -> dict:
 
         # Exiting struct?
         if struct is not None:
-            if token == '{':
-                struct_scope += 1
-            elif token == '}':
-                struct_scope -= 1
+            struct_scope += scope_change(token, '{', '}')
             if struct_scope == 0:
                 struct = None
 
-        # We've got the struct name
-        if entering_struct:
-            entering_struct = False
+        # Now in a struct
+        if prev == "struct":
             struct = token
             structinfo[struct] = Struct(token)
-
-        # About to be in a struct
-        if token == "struct":
-            entering_struct = True
 
         # Found a struct field
         if struct_scope == 1 and is_name(token) and function is None and preceded_by_type(structinfo, prev, prev_prev):
@@ -293,11 +282,14 @@ def get_ir_renames(structinfo: dict):
     fields = dict()
     methods = dict()
     top_lvl_used = set()
+
+    # Go through each struct in turn
     for i, struct in enumerate(structinfo):
         ir[struct] = Struct("struct" + str(i))
 
-        sorted_fields = sort_dict(structinfo[struct].fields)
+        # Choose struct field names
         j = 0
+        sorted_fields = sort_dict(structinfo[struct].fields)
         for field in sorted_fields:
             if field in fields:
                 ir[struct].fields[field] = fields[field]
@@ -307,15 +299,19 @@ def get_ir_renames(structinfo: dict):
             fields[field] = fieldname
             j += 1
 
+        # Choose function names
         for x, func in enumerate(structinfo[struct].functions):
             if struct is not None:
                 methods[func] = "func" + str(x)
 
             ir[struct].functions[func] = Function()
+
+            # Choose function argument names
             sorted_args = sort_dict(structinfo[struct].functions[func].args)
             for y, arg in enumerate(sorted_args):
                 ir[struct].functions[func].args[arg] = "arg" + str(y)
 
+            # Choose local variable names
             sorted_vars = sort_dict(structinfo[struct].functions[func].variables)
             for y, var in enumerate(sorted_vars):
                 ir[struct].functions[func].variables[var] = "var" + str(y)
@@ -339,30 +335,24 @@ def get_ir_renames(structinfo: dict):
 
 def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
     new_tokens = []
-    entering_struct = False
     entering_function = False
     struct = None
     function = None
     struct_scope = 0
     function_scope = 0
     parenth_depth = 0
+    prev = None
 
     for token in tokens:
         # Handle exiting function
         if not entering_function and function != None:
-            if token == '{':
-                function_scope += 1
-            elif token == '}':
-                function_scope -= 1
+            function_scope += scope_change(token, '{', '}')
             if function_scope == 0:
                 function = None
 
         # Record args
         if entering_function:
-            if token == '(':
-                parenth_depth += 1
-            elif token == ')':
-                parenth_depth -= 1
+            parenth_depth += scope_change(token, '(', ')')
             if parenth_depth == 0:
                 entering_function = False
 
@@ -372,21 +362,13 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
 
         # Exiting struct?
         if struct != None:
-            if token == '{':
-                struct_scope += 1
-            elif token == '}':
-                struct_scope -= 1
+            struct_scope += scope_change(token, '{', '}')
             if struct_scope == 0:
                 struct = None
 
         # We've got the struct name
-        if entering_struct:
-            entering_struct = False
+        if prev == "struct":
             struct = token
-
-        # About to be in a struct
-        if token == "struct":
-            entering_struct = True
 
         # Rename if appropriate
         if function is not None and token in ir[struct].functions[function].args:
@@ -398,6 +380,7 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
         elif function is not None and token in ir[struct].functions[function].variables:
             token = ir[struct].functions[function].variables[token]
 
+        prev = token
         new_tokens.append(token)
 
     return new_tokens
