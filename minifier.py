@@ -1,6 +1,5 @@
 import re
 from dataclasses import dataclass
-from collections import defaultdict
 import subprocess
 
 #################
@@ -371,7 +370,7 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
 
 
 def get_frequencies(tokens: list) -> dict:
-    freq = defaultdict(int)
+    freq = dict()
 
     for token in tokens:
         if not renamable(token):
