@@ -9,11 +9,11 @@ import subprocess
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t', 'bool', 'auto', 'int32_t', ]
+TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t', 'bool', 'auto', 'int32_t', 'string', 'istringstream']
 KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'vector', 'push_back', 'back',
             'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'const', 'assert',
-            'endl', 'for', 'while', 'swap', 'if', 'else', 'string', 'char', 'abs', 'getline',
-            'break', 'length', 'switch', 'case', 'cin', 'istringstream', 'empty', 'continue', 'size',
+            'endl', 'for', 'while', 'swap', 'if', 'else', 'char', 'abs', 'getline',
+            'break', 'length', 'switch', 'case', 'cin', 'empty', 'continue', 'size',
             'default', 'using', 'namespace', '__builtin_popcountll', 'stoi', 'chrono', 'second',
             'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater']
 global counter, resets
@@ -175,6 +175,14 @@ class Function:
         self.variables = dict()
 
 
+def is_type(info: dict, token: str) -> bool:
+    return token in TYPES or token in info
+
+
+def preceded_by_type(info: dict, prev: str, prev_prev: str) -> bool:
+    return is_type(info, prev) or (prev == '>' and is_type(info, prev_prev))
+
+
 def get_stats(tokens: list) -> dict:
     entering_struct = False
     entering_function = False
@@ -185,6 +193,7 @@ def get_stats(tokens: list) -> dict:
     parenth_depth = 0
     structinfo = {None: Struct("Top Level")}
     prev = None
+    prev_prev = None
 
     for i, token in enumerate(tokens):
         # Handle exiting function
@@ -211,7 +220,8 @@ def get_stats(tokens: list) -> dict:
         # Found a function
         # TODO: Not rely on types
         following = tokens[i + 1] if i + 1 < len(tokens) else None
-        if prev in TYPES and following == '(':
+        if is_name(token) and preceded_by_type(structinfo, prev, prev_prev) and following == '(':
+            print(token)
             entering_function = True
             function = token
             structinfo[struct].functions[token] = Function()
@@ -226,7 +236,7 @@ def get_stats(tokens: list) -> dict:
                 structinfo[struct].functions[function].variables[token] += 1
 
             # Found declaration of local variable
-            if not entering_function and is_name(token) and (prev in TYPES or prev in structinfo):
+            if not entering_function and is_name(token) and preceded_by_type(structinfo, prev, prev_prev):
                 structinfo[struct].functions[function].variables[token] = 1
 
         # Exiting struct?
@@ -249,10 +259,7 @@ def get_stats(tokens: list) -> dict:
             entering_struct = True
 
         # Found a struct field
-        if struct_scope == 1 and is_name(token) and function is None and not (
-            is_keyword(token) or token in structinfo[struct].functions or token.startswith("arg")
-            or token in ['true', 'false'] or token in structinfo
-        ):
+        if struct_scope == 1 and is_name(token) and function is None and preceded_by_type(structinfo, prev, prev_prev):
             structinfo[struct].fields[token] = 0
 
         if token in structinfo[struct].fields:
@@ -262,6 +269,7 @@ def get_stats(tokens: list) -> dict:
         if token in structinfo[None].functions and token not in structinfo[struct].top_lvl_used and struct is not None:
             structinfo[struct].top_lvl_used.append(token)
 
+        prev_prev = prev
         prev = token
 
     return structinfo
@@ -411,11 +419,13 @@ def minify(content: str):
     tokens = fetch_tokens(content)
     tokens = group(tokens)
     tokens = strip(tokens)
+
     structinfo = get_stats(tokens)
+    print_stats(structinfo)
+
     ir, fields, methods = get_ir_renames(structinfo)
     tokens = to_ir(tokens, ir, fields, methods)
 
-    print_stats(structinfo)
 
     # Write IR to file, for easier debugging
     prev = None
