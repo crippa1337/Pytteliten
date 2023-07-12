@@ -186,7 +186,7 @@ def rename_args(tokens: list) -> list:
                 in_function = False
                 args = dict()
 
-         # record args and rename them
+         # Record args and rename them
         if entering_function:
             if token == '(':
                 parenth_depth += 1
@@ -205,12 +205,82 @@ def rename_args(tokens: list) -> list:
         if token in functions and not in_function:
             entering_function = True
 
+        # Rename args
         if token in args:
             token = args[token]
 
         new_tokens.append(token)
 
     return new_tokens
+
+
+def rename_struct_funcs(tokens: list) -> tuple[list, dict]:
+    functions = find_functions(tokens)
+    renames = dict()
+    new_tokens = []
+    top_level_counter = 0
+    entering_struct = False
+    struct = None
+    struct_counter = 0
+    scope = 0
+    structinfo = dict()
+    top_levels = []
+
+    for token in tokens:
+        # Record scope depth in struct so
+        # can tell when we've exited it
+        if struct != None:
+            if token == '{':
+                scope += 1
+            elif token == '}':
+                scope -= 1
+            if scope == 0:
+                struct = None
+                struct_counter = 0
+
+        # We've got the struct name
+        if entering_struct:
+            entering_struct = False
+            struct = token
+            structinfo[struct] = {"fields": [], "functions": [], "top level used": []}
+
+        # About to be in a struct
+        if token == "struct":
+            entering_struct = True
+
+        # Found a struct field, we can't rename it just yet because
+        # you can define fields below where they are used
+        if scope == 1 and is_name(token) and not (
+            is_keyword(token) or token in functions or token.startswith("arg") or token in ['true', 'false']
+        ):
+            structinfo[struct]["fields"].append(token)
+
+        if token in functions and not is_keyword(token):
+            # If a function has not been seen before
+            # - Takes advantage of the fact that in C++ functions
+            #   must be declared above where they're used
+            if token not in renames:
+                if struct != None:
+                    # Can immediately rename struct methods
+                    renames[token] = "func" + str(struct_counter)
+                    structinfo[struct]["functions"].append(token)
+                    struct_counter += 1
+                else:
+                    # Can't rename top-level functions just yet, as they
+                    # may clash with methods in structs
+                    renames[token] = token
+                    top_levels.append(token)
+                    top_level_counter += 1
+
+            token = renames[token]
+
+        # Record what top level functions are used in each struct
+        if token in top_levels and struct != None:
+            structinfo[struct]["top level used"].append(token)
+
+        new_tokens.append(token)
+
+    return (new_tokens, structinfo)
 
 
 def get_frequencies(tokens: list) -> dict:
@@ -233,6 +303,13 @@ def minify(content: str):
     tokens = group(tokens)
     tokens = strip(tokens)
     tokens = rename_args(tokens)
+    (tokens, structinfo) = rename_struct_funcs(tokens)
+
+    for struct in structinfo:
+        print(f"{struct}:")
+        for thing in structinfo[struct]:
+            print(f"     {thing}: {structinfo[struct][thing]}")
+
     freq = get_frequencies(tokens)
 
     new_tokens = []
