@@ -152,21 +152,6 @@ def strip(tokens: list) -> list:
     return new_tokens
 
 
-def find_functions(tokens: list) -> list:
-    functions = []
-    prev = None
-
-    for i, token in enumerate(tokens):
-        following = tokens[i + 1] if i + 1 < len(tokens) else None
-
-        if prev in TYPES and following == '(':
-            functions.append(token)
-
-        prev = token
-
-    return functions
-
-
 @dataclass
 class Struct:
     name: str
