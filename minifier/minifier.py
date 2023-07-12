@@ -120,7 +120,7 @@ def group_tokens(token_list: list, start: list, end: list, include_end: bool = T
 
 
 def group(tokens: list) -> list:
-    """Groups all relevant tokens together."""
+    """Groups all relevant tokens together, such as comments, strings and deletion regions."""
     # Create token groups such as comments, strings, etc.
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
@@ -256,7 +256,7 @@ def get_stats(tokens: list) -> dict:
 
         # Found a struct field
         if struct_scope == 1 and is_name(token) and function is None and preceded_by_type(structinfo, prev, prev_prev):
-            structinfo[struct].fields[token] = 0
+            structinfo[struct].fields[token] = 1
 
         if token in structinfo[struct].fields:
             structinfo[struct].fields[token] += 1
@@ -276,7 +276,6 @@ def print_stats(structinfo: dict):
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     for struct in structinfo:
-        print(struct)
         pp.pprint(structinfo[struct])
         print("")
 
@@ -411,14 +410,15 @@ def get_frequencies(tokens: list) -> dict:
     return sort_dict(freq)
 
 
-def minify(content: str):
+def minify(content: str, verbose: bool):
     """Combines all steps, producing a fully-minified file."""
     tokens = fetch_tokens(content)
     tokens = group(tokens)
     tokens = strip(tokens)
 
     structinfo = get_stats(tokens)
-    # print_stats(structinfo)
+    if verbose:
+        print_stats(structinfo)
 
     ir, fields, methods = get_ir_renames(structinfo)
     tokens = to_ir(tokens, ir, fields, methods)
@@ -461,7 +461,6 @@ def minify(content: str):
     freq = get_frequencies(tokens)
     for token in freq:
         names[token] = generate_name(token)
-        # print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
 
     for token in tokens:
         # Add a seperator between tokens that can't be attached to each other.
@@ -481,6 +480,10 @@ def minify(content: str):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description="Pytteliten minifier")
+    parser.add_argument('-v', '--verbose', action="store_true", help="Print detailed statistics during minification.")
+
     assert fetch_tokens('int main() { return 0; }') == [
         'int', ' ', 'main', '(', ')', ' ', '{', ' ', 'return', ' ', '0', ';', ' ', '}']
     assert fetch_tokens('hehe = 1;') == ['hehe', ' ', '=', ' ', '1', ';']
@@ -553,4 +556,4 @@ if __name__ == '__main__':
     with open('main.cpp', 'r') as f:
         src = f.read()
 
-        minify(src)
+        minify(src, parser.parse_args().verbose)
