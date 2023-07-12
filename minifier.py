@@ -304,9 +304,13 @@ def get_ir_renames(structinfo: dict):
                 methods[func] = "func" + str(x)
 
             ir[struct].functions[func] = Function()
-            sorted_func = sort_dict(structinfo[struct].functions[func].args)
-            for y, arg in enumerate(sorted_func):
+            sorted_args = sort_dict(structinfo[struct].functions[func].args)
+            for y, arg in enumerate(sorted_args):
                 ir[struct].functions[func].args[arg] = "arg" + str(y)
+
+            sorted_vars = sort_dict(structinfo[struct].functions[func].variables)
+            for y, var in enumerate(sorted_vars):
+                ir[struct].functions[func].variables[var] = "var" + str(y)
 
         for func in structinfo[struct].top_lvl_used:
             top_lvl_used.add(func)
