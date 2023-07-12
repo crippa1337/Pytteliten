@@ -167,72 +167,19 @@ def find_functions(tokens: list) -> list:
     return functions
 
 
-def rename_args(tokens: list) -> list:
-    new_tokens = []
-
-    functions = find_functions(tokens)
-    entering_function = False
-    in_function = False
-    args = dict()
-    parenth_depth = 0
-    scope = 0
-
-    for (i, token) in enumerate(tokens):
-        # Handle exiting function
-        if in_function:
-            if token == '{':
-                scope += 1
-            elif token == '}':
-                scope -= 1
-
-            if scope == 0:
-                in_function = False
-                args = dict()
-
-        # Record args and rename them
-        if entering_function:
-            if token == '(':
-                parenth_depth += 1
-            elif token == ')':
-                parenth_depth -= 1
-            elif parenth_depth == 1 and tokens[i + 1] in [',', ')'] and token not in TYPES:
-                num_args = len(args)
-                args[token] = "arg" + str(num_args)
-
-        # No longer in function args, now in the function itself
-        if entering_function and parenth_depth == 0:
-            entering_function = False
-            in_function = True
-
-        # Are we entering a function?
-        if token in functions and not in_function:
-            entering_function = True
-
-        # Rename args
-        if token in args:
-            token = args[token]
-
-        new_tokens.append(token)
-
-    return new_tokens
-
-def inc(lookup: dict(), key: any) -> int:
-    (lookup[key] + 1) if key in lookup else 0
-
 @dataclass
 class Struct:
+    name: str
     fields: list
     functions: list
     top_lvl_used: list
 
-    def __init__(self):
+    def __init__(self, name: str):
         self.fields = dict()
         self.functions = dict()
         self.top_lvl_used = []
+        self.name = name
 
-@dataclass
-class Function:
-    args: dict()
 
 def get_stats(tokens: list) -> dict:
     entering_struct = False
@@ -242,7 +189,7 @@ def get_stats(tokens: list) -> dict:
     struct_scope = 0
     function_scope = 0
     parenth_depth = 0
-    structinfo = {None: Struct()}
+    structinfo = {None: Struct("Top Level")}
     prev = None
 
     for i, token in enumerate(tokens):
@@ -256,7 +203,7 @@ def get_stats(tokens: list) -> dict:
             if function_scope == 0:
                 function = None
 
-        # Record args and rename them
+        # Record args
         if entering_function:
             if token == '(':
                 parenth_depth += 1
@@ -279,8 +226,7 @@ def get_stats(tokens: list) -> dict:
         if function != None and token in structinfo[struct].functions[function]:
             structinfo[struct].functions[function][token] += 1
 
-        # Record scope depth in struct so
-        # can tell when we've exited it
+        # Exiting struct?
         if struct != None:
             if token == '{':
                 struct_scope += 1
@@ -288,13 +234,12 @@ def get_stats(tokens: list) -> dict:
                 struct_scope -= 1
             if struct_scope == 0:
                 struct = None
-                #struct_counter = 0
 
         # We've got the struct name
         if entering_struct:
             entering_struct = False
             struct = token
-            structinfo[struct] = Struct()
+            structinfo[struct] = Struct(token)
 
         # About to be in a struct
         if token == "struct":
@@ -319,6 +264,119 @@ def get_stats(tokens: list) -> dict:
     return structinfo
 
 
+def sort_dict(dictionary: dict) -> dict:
+    return {k: v for k, v in sorted(dictionary.items(), key=lambda item: -item[1])}
+
+
+def get_ir(structinfo: dict):
+    ir = dict()
+    fields = dict()
+    methods = dict()
+    top_lvl_used = set()
+    for i, struct in enumerate(structinfo):
+        ir[struct] = Struct("struct" + str(i))
+
+        sorted_fields = sort_dict(structinfo[struct].fields)
+        j = 0
+        for field in sorted_fields:
+            if field in fields:
+                ir[struct].fields[field] = fields[field]
+                continue
+            fieldname = "field" + str(j)
+            ir[struct].fields[field] = fieldname
+            fields[field] = fieldname
+            j += 1
+
+        k = 0
+        for x, func in enumerate(structinfo[struct].functions):
+            if struct != None:
+                methods[func] = "method" + str(x)
+
+            ir[struct].functions[func] = dict()
+            sorted_func = sort_dict(structinfo[struct].functions[func])
+            for y, arg in enumerate(sorted_func):
+                ir[struct].functions[func][arg] = "arg" + str(y)
+
+        for func in structinfo[struct].top_lvl_used:
+            top_lvl_used.add(func)
+
+    i, j = 0, 0
+    for func in structinfo[None].functions:
+        if func in top_lvl_used:
+            methods[func] = "topfunc" + str(i)
+            i += 1
+        else:
+            if func in methods:
+                continue
+            methods[func] = "main" if func == "main" else "method" + str(j)
+            j += 1
+
+    return (ir, fields, methods)
+
+
+def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
+    new_tokens = []
+    entering_struct = False
+    entering_function = False
+    struct = None
+    function = None
+    struct_scope = 0
+    function_scope = 0
+    parenth_depth = 0
+
+    for token in tokens:
+        # Handle exiting function
+        if not entering_function and function != None:
+            if token == '{':
+                function_scope += 1
+            elif token == '}':
+                function_scope -= 1
+            if function_scope == 0:
+                function = None
+
+        # Record args
+        if entering_function:
+            if token == '(':
+                parenth_depth += 1
+            elif token == ')':
+                parenth_depth -= 1
+            if parenth_depth == 0:
+                entering_function = False
+
+        if token in methods and function == None:
+            function = token
+            entering_function = True
+
+        # Exiting struct?
+        if struct != None:
+            if token == '{':
+                struct_scope += 1
+            elif token == '}':
+                struct_scope -= 1
+            if struct_scope == 0:
+                struct = None
+
+        # We've got the struct name
+        if entering_struct:
+            entering_struct = False
+            struct = token
+
+        # About to be in a struct
+        if token == "struct":
+            entering_struct = True
+
+        if function != None and token in ir[struct].functions[function]:
+                token = ir[struct].functions[function][token]
+        elif token in fields:
+            token = fields[token]
+        elif token in methods:
+            token = methods[token]
+
+        new_tokens.append(token)
+
+    return new_tokens
+
+
 def get_frequencies(tokens: list) -> dict:
     freq = defaultdict(int)
 
@@ -326,22 +384,30 @@ def get_frequencies(tokens: list) -> dict:
         if not renamable(token):
             continue
 
-        freq[token] += 1
+        freq[token] = (freq[token] + 1) if token in freq else 0
 
-    return {k: v for k, v in sorted(freq.items(), key=lambda item: -item[1])}
+    return sort_dict(freq)
 
 
 def minify(content: str):
     tokens = fetch_tokens(content)
     tokens = group(tokens)
     tokens = strip(tokens)
-    #tokens = rename_args(tokens)
     structinfo = get_stats(tokens)
+    (ir, fields, methods) = get_ir(structinfo)
 
-    pp = pprint.PrettyPrinter(indent=4)
-    for struct in structinfo:
-        print(f"{struct}:")
-        pp.pprint(structinfo[struct])
+    #pp = pprint.PrettyPrinter(indent=4)
+    #for struct in structinfo:
+    #    print("")
+    #    pp.pprint(ir[struct])
+    #print("")
+    #print("Struct Fields:")
+    #pp.pprint(fields)
+    #print("")
+    #print("Functions & Struct Methods:")
+    #pp.pprint(methods)
+
+    tokens = to_ir(tokens, ir, fields, methods)
 
     freq = get_frequencies(tokens)
 
@@ -356,9 +422,9 @@ def minify(content: str):
         names[kw] = kw
 
     # generate names in order of frequency
-    #for token in freq:
-    #    names[token] = generate_name(token)
-        #print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
+    for token in freq:
+        names[token] = generate_name(token)
+        print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
 
     for token in tokens:
         # Add a seperator between tokens that can't be attached to each other.
@@ -368,14 +434,10 @@ def minify(content: str):
 
         # If the token is a name, but not a keyword, we mangle it.
         if renamable(token):
-            token = generate_name(token)#names[token]
+            token = names[token]
 
         prev = token
         new_tokens.append(token)
-
-    for token in names:
-        if not is_keyword(token):
-            print(f"{token: <18}: {names[token]}")
 
     with open('pytteliten-mini.cpp', 'w') as f:
         f.write(''.join(new_tokens))
