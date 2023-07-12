@@ -180,7 +180,7 @@ def is_type(info: dict, token: str) -> bool:
 
 
 def preceded_by_type(info: dict, prev: str, prev_prev: str) -> bool:
-    return is_type(info, prev) or (prev == '>' and is_type(info, prev_prev))
+    return is_type(info, prev) or (prev in ['>', '&'] and is_type(info, prev_prev))
 
 
 def scope_change(token: str, opener: str, closer: str) -> int:
