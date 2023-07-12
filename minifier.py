@@ -184,8 +184,6 @@ def get_stats(tokens: list) -> dict:
     parenth_depth = 0
     structinfo = {None: Struct("Top Level")}
     prev = None
-    functions = set()
-    fields = set()
 
     for i, token in enumerate(tokens):
         # Handle exiting function
@@ -215,7 +213,6 @@ def get_stats(tokens: list) -> dict:
         if prev in TYPES and following == '(':
             entering_function = True
             function = token
-            functions.add(token)
             structinfo[struct].functions[token] = Function()
 
         if function != None:
@@ -256,7 +253,6 @@ def get_stats(tokens: list) -> dict:
             or token in ['true', 'false'] or token in structinfo
         ):
             structinfo[struct].fields[token] = 0
-            fields.add(token)
 
         if token in structinfo[struct].fields:
             structinfo[struct].fields[token] += 1
