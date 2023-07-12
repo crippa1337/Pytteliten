@@ -393,7 +393,7 @@ def get_frequencies(tokens: list) -> dict:
         if not renamable(token):
             continue
 
-        freq[token] = (freq[token] + 1) if token in freq else 0
+        freq[token] = (freq[token] + 1) if token in freq else 1
 
     return sort_dict(freq)
 
