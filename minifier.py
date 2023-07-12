@@ -9,13 +9,14 @@ import subprocess
 # KEY: TOKEN
 # VALUE: MANGLED NAME
 names = dict()
-TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t', 'bool', 'auto', 'int32_t', 'string', 'vector', 'istringstream']
+TYPES = ['int', 'void', 'uint16_t', 'uint32_t', 'uint64_t',
+         'bool', 'auto', 'int32_t', 'string', 'vector', 'istringstream']
 KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'push_back', 'back',
-            'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'const', 'assert',
-            'endl', 'for', 'while', 'swap', 'if', 'else', 'char', 'abs', 'getline',
-            'break', 'length', 'switch', 'case', 'cin', 'empty', 'continue', 'size',
-            'default', 'using', 'namespace', '__builtin_popcountll', 'stoi', 'chrono', 'second',
-            'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater']
+                    'pop_back', 'reserve', 'cout', '__builtin_bswap64', '__builtin_ctzll', 'const', 'assert',
+                    'endl', 'for', 'while', 'swap', 'if', 'else', 'char', 'abs', 'getline',
+                    'break', 'length', 'switch', 'case', 'cin', 'empty', 'continue', 'size',
+                    'default', 'using', 'namespace', '__builtin_popcountll', 'stoi', 'chrono', 'second',
+                    'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
@@ -321,7 +322,8 @@ def get_ir_renames(structinfo: dict):
                 ir[struct].functions[func].args[arg] = "arg" + str(y)
 
             # Choose local variable names
-            sorted_vars = sort_dict(structinfo[struct].functions[func].variables)
+            sorted_vars = sort_dict(
+                structinfo[struct].functions[func].variables)
             for y, var in enumerate(sorted_vars):
                 ir[struct].functions[func].variables[var] = "var" + str(y)
 
@@ -416,11 +418,10 @@ def minify(content: str):
     tokens = strip(tokens)
 
     structinfo = get_stats(tokens)
-    #print_stats(structinfo)
+    # print_stats(structinfo)
 
     ir, fields, methods = get_ir_renames(structinfo)
     tokens = to_ir(tokens, ir, fields, methods)
-
 
     # Write IR to file, for easier debugging
     prev = None
@@ -435,10 +436,12 @@ def minify(content: str):
 
     # Make it look nice
     try:
-        subprocess.run(["clang-format", "--style=file", "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
+        subprocess.run(["clang-format", "--style=file", "-i",
+                       "plir.cpp"], stdout=subprocess.DEVNULL)
     except:
         try:
-            subprocess.run(["./clang-format", "--style=file", "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
+            subprocess.run(["./clang-format", "--style=file",
+                           "-i", "plir.cpp"], stdout=subprocess.DEVNULL)
         except:
             pass
 
@@ -458,7 +461,7 @@ def minify(content: str):
     freq = get_frequencies(tokens)
     for token in freq:
         names[token] = generate_name(token)
-        #print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
+        # print(f"{token: <18}: {names[token]: >2}, {freq[token]}")
 
     for token in tokens:
         # Add a seperator between tokens that can't be attached to each other.
@@ -532,10 +535,14 @@ if __name__ == '__main__':
         "e"]) == ["a", "b", "c", "d"]
     assert group_tokens(["a", "b", "c", "d"], ["b"], [
         "b"]) == ["a", "b", "c", "d"]
-    assert group_tokens(["a", "b", "c", "d"], ["a", "b"], ["c"]) == ["abc", "d"]
-    assert group_tokens(["a", "b", "c", "d"], ["a"], ["b", "c"]) == ["abc", "d"]
-    assert group_tokens(["a", "b", "c", "d"], ["a", "b", "c"], ["d"]) == ["abcd"]
-    assert group_tokens(["a", "b", "c", "d"], ["a"], ["c"], True) == ["abc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], [
+                        "a", "b"], ["c"]) == ["abc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], ["a"],
+                        ["b", "c"]) == ["abc", "d"]
+    assert group_tokens(["a", "b", "c", "d"], [
+                        "a", "b", "c"], ["d"]) == ["abcd"]
+    assert group_tokens(["a", "b", "c", "d"], ["a"],
+                        ["c"], True) == ["abc", "d"]
     assert group_tokens(["a", "b", "c", "d"], ["a"], [
         "c"], False) == ["ab", "c", "d"]
     assert group_tokens(["a", "b", "c", "d"], ["c"], [
