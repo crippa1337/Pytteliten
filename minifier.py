@@ -119,6 +119,7 @@ def group_tokens(token_list: list, start: list, end: list, include_end: bool = T
 
 
 def group(tokens: list) -> list:
+    """Groups all relevant tokens together."""
     # Create token groups such as comments, strings, etc.
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
@@ -136,6 +137,7 @@ def group(tokens: list) -> list:
 
 
 def strip(tokens: list) -> list:
+    """Strips out all tokens that shouldn't be present in final code."""
     new_tokens = []
     for token in tokens:
         # line/block comments, deletion regions and attributes
@@ -176,18 +178,22 @@ class Function:
 
 
 def is_type(info: dict, token: str) -> bool:
+    """Check if the token is a type."""
     return token in TYPES or token in info
 
 
 def preceded_by_type(info: dict, prev: str, prev_prev: str) -> bool:
+    """Check if token is preceeded by type."""
     return is_type(info, prev) or (prev in ['>', '&'] and is_type(info, prev_prev))
 
 
 def scope_change(token: str, opener: str, closer: str) -> int:
+    """Calculates change in scope."""
     return (token == opener) - (token == closer)
 
 
 def get_stats(tokens: list) -> dict:
+    """Analyses struct and function structure, recording frequency stats as it goes."""
     entering_function = False
     struct = None
     function = None
@@ -265,6 +271,7 @@ def get_stats(tokens: list) -> dict:
 
 
 def print_stats(structinfo: dict):
+    """Pretty print stats."""
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     for struct in structinfo:
@@ -274,10 +281,12 @@ def print_stats(structinfo: dict):
 
 
 def sort_dict(dictionary: dict) -> dict:
+    """Sorts dictionary in descending order by value."""
     return {k: v for k, v in sorted(dictionary.items(), key=lambda item: -item[1])}
 
 
 def get_ir_renames(structinfo: dict):
+    """Works out how to rename tokens to intermediate-representation based on given statistics."""
     ir = dict()
     fields = dict()
     methods = dict()
@@ -334,6 +343,7 @@ def get_ir_renames(structinfo: dict):
 
 
 def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
+    """Transforms tokens into intermediate representation with given renames."""
     new_tokens = []
     entering_function = False
     struct = None
@@ -387,6 +397,7 @@ def to_ir(tokens: list, ir: dict, fields: dict, methods: dict) -> list:
 
 
 def get_frequencies(tokens: list) -> dict:
+    """Works out frequency of each token."""
     freq = dict()
 
     for token in tokens:
@@ -399,6 +410,7 @@ def get_frequencies(tokens: list) -> dict:
 
 
 def minify(content: str):
+    """Combines all steps, producing a fully-minified file."""
     tokens = fetch_tokens(content)
     tokens = group(tokens)
     tokens = strip(tokens)
