@@ -281,7 +281,6 @@ def get_ir_renames(structinfo: dict):
             fields[field] = fieldname
             j += 1
 
-        k = 0
         for x, func in enumerate(structinfo[struct].functions):
             if struct != None:
                 methods[func] = "func" + str(x)
