@@ -1,6 +1,7 @@
 /cmake-build-*
 /.idea
 /pytteliten.cpp
+/plir.cpp
 /*.exe
 /*.out
 .vscode
