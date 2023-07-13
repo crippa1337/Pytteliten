@@ -78,7 +78,7 @@ def attachable_tokens(first: str, second: str) -> bool:
     return attach_eligible(first) or attach_eligible(second)
 
 
-def group_tokens(token_list: list, start: list, end: list, include_end: bool = True) -> list:
+def group_tokens(token_list: list, start: list, end: list, include_end: bool = True, include_space: bool = True) -> list:
     """Finds ``start`` tokens and concatenates everything from ``start``-``end``."""
     output = []
 
@@ -111,7 +111,11 @@ def group_tokens(token_list: list, start: list, end: list, include_end: bool = T
         # Self-explanatory, join everything from start to end. If we never found anything this is
         # start:start+1 because we set end_idx to start + 1 at the beginning.
         # This adds just the token if we found nothing.
-        output.append("".join(token_list[start_idx:end_idx]))
+        grouped_tokens = "".join(token_list[start_idx:end_idx])
+        if not include_space and end_idx != start_idx + 1:
+            grouped_tokens = grouped_tokens.replace(" ", "")
+
+        output.append(grouped_tokens)
 
         # We searched everything from start to end, so no need to research. set start to old end.
         start_idx = end_idx
@@ -125,13 +129,13 @@ def group(tokens: list) -> list:
     tokens = group_tokens(tokens, ['"'], ['"'])              # Strings
     tokens = group_tokens(tokens, ['/', '*'], ['*', '/'])    # Block comments
     tokens = group_tokens(tokens, ['[', '['], [']', ']'])    # Attributes
-    tokens = group_tokens(tokens, ['#', 'include'], ['\n'])  # Includes
+    tokens = group_tokens(tokens, ['#', 'include'], ['\n'], include_space=False)  # Includes
 
     # Deletion regions
     tokens = group_tokens(tokens, ['/', '/', ' ', 'minify', ' ', 'enable', ' ', 'filter', ' ', 'delete'],
                           ['/', '/', ' ', 'minify', ' ', 'disable', ' ', 'filter', ' ', 'delete'])
 
-    tokens = group_tokens(tokens, ['/', '/'], ['\n'], False)  # Line comments
+    tokens = group_tokens(tokens, ['/', '/'], ['\n'], include_end=False)  # Line comments
     tokens = group_tokens(tokens, ["'"], ["'"])               # Chars
 
     return tokens
