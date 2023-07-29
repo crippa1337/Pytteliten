@@ -3,4 +3,7 @@ IndentWidth: 4
 BreakBeforeBraces: Attach
 BreakBeforeBinaryOperators: All
 AlignOperands: AlignAfterOperator
+BinPackArguments: false
+BinPackParameters: false
+ExperimentalAutoDetectBinPacking: false
 ColumnLimit: 0
