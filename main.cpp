@@ -62,6 +62,8 @@ uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
+int pEval[]{100, 300, 315, 500, 950};
+
 uint64_t ZobristPieces[768]{};
 
 [[nodiscard]] auto slidingAttacks(uint32_t square, uint64_t occ, uint64_t mask) {
@@ -156,6 +158,10 @@ uint64_t ZobristPieces[768]{};
         str += "nbrq"[move >> 2 & 3];
 
     return str;
+}
+
+auto _edgedist(auto sq){
+  return std::min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
 }
 
 struct BoardState {
@@ -579,7 +585,21 @@ struct Board {
     // minify disable filter delete
 
     int32_t evaluateColor(auto color) {
-        return __builtin_popcountll(state.boards[0] & state.boards[6 + color]) * 100 + __builtin_popcountll(state.boards[1] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[2] & state.boards[6 + color]) * 300 + __builtin_popcountll(state.boards[3] & state.boards[6 + color]) * 500 + __builtin_popcountll(state.boards[4] & state.boards[6 + color]) * 900;
+        auto our = state.boards[6 + color];
+        auto eval = 0;
+        for (auto i = 0; i < 5; i++){
+            auto piece = state.boards[i] & our;
+            eval += __builtin_popcountll(piece) * pEval[i];
+            while (piece){
+                auto sq = __builtin_ctzll(piece);
+                piece &= piece - 1;
+                if (i > 0){
+                    eval += _edgedist(sq) * 5;
+                }
+            }
+        }
+
+        return eval;
     }
 
     int32_t evaluate() {
