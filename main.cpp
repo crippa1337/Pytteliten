@@ -164,6 +164,10 @@ auto _edgedist(auto sq){
   return std::min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
 }
 
+auto _relr(auto sq, auto c){
+    return c == 0 ? (sq / 8) : 7 - (sq / 8);
+}
+
 struct BoardState {
     // pnbrqk ours theirs
     uint64_t boards[8] = {
@@ -593,6 +597,7 @@ struct Board {
             while (piece){
                 auto sq = __builtin_ctzll(piece);
                 piece &= piece - 1;
+                if (i == 0) eval += _relr(sq, color) * _relr(sq, color);
                 if (i > 0){
                     eval += _edgedist(sq) * 5;
                 }
