@@ -244,7 +244,7 @@ struct Board {
     }
 
     void generateFromGetter(auto *&moves, auto targets,
-                            auto(*getter)(uint32_t, uint64_t), auto pieces) const {
+                            auto (*getter)(uint32_t, uint64_t), auto pieces) const {
         while (pieces) {
             const auto from = __builtin_ctzll(pieces);
             pieces &= pieces - 1;
