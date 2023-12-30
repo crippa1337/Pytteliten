@@ -8,7 +8,7 @@ ifeq ($(MAKECMDGOALS),mini)
 endif
 
 
-CXXFLAGS    := -O3 -std=c++20 -Wall -Wextra -pedantic -DNDEBUG -march=native
+CXXFLAGS    := -stdlib=libc++ -O3 -std=c++20 -Wall -Wextra -pedantic -DNDEBUG -march=native
 
 CXX         := clang++
 SUFFIX      :=
