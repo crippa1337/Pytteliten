@@ -8,7 +8,7 @@ ifeq ($(MAKECMDGOALS),mini)
 endif
 
 
-CXXFLAGS    := -stdlib=libc++ -O3 -std=c++20 -Wall -Wextra -pedantic -DNDEBUG -march=native
+CXXFLAGS    := -O3 -std=c++20 -Wall -Wextra -pedantic -DNDEBUG -march=native
 
 CXX         := clang++
 SUFFIX      :=
@@ -18,7 +18,7 @@ ifeq ($(OS), Windows_NT)
     SUFFIX   := .exe
     CXXFLAGS += -static
 else
-	CXXFLAGS += -pthread
+	CXXFLAGS += -pthread -stdlib=libc++
 endif
 
 OUT := $(EXE)$(SUFFIX)
