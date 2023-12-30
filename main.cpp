@@ -160,11 +160,11 @@ uint64_t ZobristPieces[768]{};
     return str;
 }
 
-auto _edgedist(auto sq){
-  return std::min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
+auto _edgedist(auto sq) {
+    return std::min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
 }
 
-auto _relr(auto sq, auto c){
+auto _relr(auto sq, auto c) {
     return c == 0 ? (sq / 8) : 7 - (sq / 8);
 }
 
@@ -244,7 +244,7 @@ struct Board {
     }
 
     void generateFromGetter(auto *&moves, auto targets,
-                            auto (*getter)(uint32_t, uint64_t), auto pieces) const {
+                            auto(*getter)(uint32_t, uint64_t), auto pieces) const {
         while (pieces) {
             const auto from = __builtin_ctzll(pieces);
             pieces &= pieces - 1;
@@ -591,14 +591,14 @@ struct Board {
     int32_t evaluateColor(auto color) {
         auto our = state.boards[6 + color];
         auto eval = 0;
-        for (auto i = 0; i < 5; i++){
+        for (auto i = 0; i < 5; i++) {
             auto piece = state.boards[i] & our;
             eval += __builtin_popcountll(piece) * pEval[i];
-            while (piece){
+            while (piece) {
                 auto sq = __builtin_ctzll(piece);
                 piece &= piece - 1;
                 if (i == 0) eval += _relr(sq, color) * _relr(sq, color);
-                if (i > 0){
+                if (i > 0) {
                     eval += _edgedist(sq) * 5;
                 }
             }
