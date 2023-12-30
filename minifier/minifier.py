@@ -16,7 +16,7 @@ KEYWORDS = TYPES + ['return', 'printf', 'struct', 'main', 'std', 'push_back', 'b
                     'endl', 'for', 'while', 'swap', 'if', 'else', 'char', 'abs', 'getline',
                     'break', 'length', 'switch', 'case', 'cin', 'empty', 'continue', 'size',
                     'default', 'using', 'namespace', '__builtin_popcountll', 'stoi', 'chrono', 'second',
-                    'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater']
+                    'high_resolution_clock', 'duration_cast', 'milliseconds', 'now', 'max', 'pair', 'stable_sort', 'greater', 'min']
 global counter, resets
 counter = 65  # ASCII A
 resets = 0  # Number of times the counter has exceeded reset back to A
