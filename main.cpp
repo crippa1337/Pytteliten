@@ -5,10 +5,10 @@
 #include <string>
 #include <vector>
 
-// minify enable filter delete
+#ifndef MINIFIED
 #include <cassert>
 #include <cctype>
-// minify disable filter delete
+#endif
 
 using namespace std;
 vector<string> split(const string &str, char delim) {
@@ -120,7 +120,7 @@ uint64_t ZobristPieces[768]{};
 //     flag = 0 (normal), 1 (promotion), 2 (castling), 3 (en passant)
 // we don't generate bishop or rook promos
 
-// minify enable filter delete
+#ifndef MINIFIED
 [[nodiscard]] auto pieceFromChar(char c) {
     switch (c) {
         case 'p':
@@ -145,7 +145,7 @@ uint64_t ZobristPieces[768]{};
             return 6;
     }
 }
-// minify disable filter delete
+#endif
 
 [[nodiscard]] auto moveToString(auto move, auto blackToMove) {
     auto str = string{
@@ -184,11 +184,11 @@ struct BoardState {
     bool castlingRights[2][2] = {{true, true}, {true, true}};  // [ours, theirs][short, long]
     uint32_t epSquare = 0;
     uint64_t hash;
-    // minify enable filter delete
+#ifndef MINIFIED
     uint32_t halfmove = 0;
     uint32_t fullmove = 1;
     bool operator==(const BoardState &) const;
-    // minify disable filter delete
+#endif
 
     [[nodiscard]] int32_t pieceOn(auto sq) {
         return 6 * !((boards[6] | boards[7]) & (1ULL << sq))            // return 6 (no piece) if no piece is on that square
@@ -218,7 +218,7 @@ struct BoardState {
         }
     }
 
-    // minify enable filter delete
+#ifndef MINIFIED
     void setPiece(auto sq, auto piece, auto black) {
         const auto bit = 1ULL << sq;
         boards[piece] |= bit;
@@ -232,7 +232,7 @@ struct BoardState {
         swap(boards[6], boards[7]);
         swap(castlingRights[0], castlingRights[1]);
     }
-    // minify disable filter delete
+#endif
 };
 
 struct Board {
@@ -267,10 +267,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 13;  //  queen promo = (3 << 2) + 1 == 13
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 1;   // knight promo = (0 << 2) + 1 == 1
-                    // minify enable filter delete
+#ifndef MINIFIED
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 9;  //   rook promo = (2 << 2) + 1 == 9
                     *(moves++) = ((to - 7) << 10) | (to << 4) | 5;  // bishop promo = (1 << 2) + 1 == 5
-                    // minify disable filter delete
+#endif
                 } else
                     *(moves++) = ((to - 7) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -285,10 +285,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 1;
-                    // minify enable filter delete
+#ifndef MINIFIED
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 9;
                     *(moves++) = ((to - 9) << 10) | (to << 4) | 5;
-                    // minify disable filter delete
+#endif
                 } else
                     *(moves++) = ((to - 9) << 10) | (to << 4) | (to == state.epSquare ? 3 : 0);
             }
@@ -310,10 +310,10 @@ struct Board {
                 if (to > 55) {
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 13;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 1;
-                    // minify enable filter delete
+#ifndef MINIFIED
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 9;
                     *(moves++) = ((to - 8) << 10) | (to << 4) | 5;
-                    // minify disable filter delete
+#endif
                 } else
                     *(moves++) = ((to - 8) << 10) | (to << 4);
             }
@@ -343,29 +343,29 @@ struct Board {
 
     bool makeMove(auto move) {
         const auto piece = state.pieceOn(move >> 10);
-        // minify enable filter delete
+#ifndef MINIFIED
         assert(piece < 6);
         assert(piece == 0 || ((move & 3) != 1 && (move & 3) != 3));  // ensure promos and en passants are a pawn moving
         assert(piece == 5 || (move & 3) != 2);                       // ensure castling moves are a king moving
         assert((move >> 10) != (move >> 4 & 63));                    // ensure from != to
-        // minify disable filter delete
+#endif
 
         history.push_back(state);
 
-        // minify enable filter delete
+#ifndef MINIFIED
         state.halfmove++;
         if (piece == 0)
             state.halfmove = 0;
 
         if (state.boards[7] & 1ULL << (move >> 4 & 63))
             assert(state.pieceOn(move >> 4 & 63) < 6);
-        // minify disable filter delete
+#endif
 
         // remove captured piece
         if (state.boards[7] & 1ULL << (move >> 4 & 63)) {
-            // minify enable filter delete
+#ifndef MINIFIED
             state.halfmove = 0;
-            // minify disable filter delete
+#endif
             state.boards[state.pieceOn(move >> 4 & 63)] ^= 1ULL << (move >> 4 & 63);
             state.boards[7] ^= 1ULL << (move >> 4 & 63);
         }
@@ -429,15 +429,15 @@ struct Board {
     }
 
     void unmakeMove() {
-        // minify enable filter delete
+#ifndef MINIFIED
         assert(!history.empty());
-        // minify disable filter delete
+#endif
 
         state = history.back();
         history.pop_back();
     }
 
-    // minify enable filter delete
+#ifndef MINIFIED
     void parseFen(const auto &fen) {
         const auto tokens = split(fen, ' ');
 
@@ -586,7 +586,7 @@ struct Board {
         board.parseFen(fen);
         return board;
     }
-    // minify disable filter delete
+#endif
 
     int32_t evaluateColor(auto color) {
         const auto our = state.boards[6 + color];
@@ -610,7 +610,7 @@ struct Board {
     }
 };
 
-// minify enable filter delete
+#ifndef MINIFIED
 uint64_t doPerft(auto &board, auto depth) {
     if (depth == 0)
         return 1;
@@ -658,14 +658,14 @@ void perft(auto &board, auto depth) {
 
     cout << total << " nodes" << endl;
 }
-// minify disable filter delete
+#endif
 
 struct ThreadData {
     uint16_t bestMove = 0;
 
-    // minify enable filter delete
+#ifndef MINIFIED
     uint64_t nodes = 0;
-    // minify disable filter delete
+#endif
 
     bool searchComplete = true;
 };
@@ -711,9 +711,9 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
         }
 
         movesMade++;
-        // minify enable filter delete
+#ifndef MINIFIED
         threadData.nodes++;
-        // minify disable filter delete
+#endif
 
         const int32_t score = -negamax(board, threadData, ply + 1, depth - 1, -beta, -alpha, hardTimeLimit);
 
@@ -740,43 +740,43 @@ int32_t negamax(auto &board, auto &threadData, auto ply, auto depth, auto alpha,
 }
 
 void searchRoot(auto &board, auto &threadData, auto timeRemaining, auto increment
-                // minify enable filter delete
+#ifndef MINIFIED
                 ,
                 int32_t searchDepth = 64
-                // minify disable filter delete
+#endif
 ) {
     auto bestMove = 0;
     auto startTime = chrono::high_resolution_clock::now();
     for (auto depth = 1; depth <
-                         // minify enable filter delete
+#ifndef MINIFIED
                          searchDepth +
-                             // minify disable filter delete
+#endif
                              64;
          depth++) {
-        // minify enable filter delete
+#ifndef MINIFIED
         if (chrono::high_resolution_clock::now() >= startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2)) {
             break;
         }
-        // minify disable filter delete
+#endif
 
-        // minify enable filter delete
+#ifndef MINIFIED
         auto value =
-            // minify disable filter delete
+#endif
             negamax(board, threadData, 0, depth, -32000, 32000,
                     startTime + chrono::milliseconds(timeRemaining / 40 + increment / 2));
 
         if (threadData.searchComplete)
             bestMove = threadData.bestMove;
 
-        // minify enable filter delete
+#ifndef MINIFIED
         cout << "info depth " << depth << " nodes " << threadData.nodes << " score cp " << value << " pv " << moveToString(threadData.bestMove, board.state.flags[0]) << endl;
-        // minify disable filter delete
+#endif
     }
 
     cout << "bestmove " << moveToString(bestMove, board.state.flags[0]) << endl;
 }
 
-// minify enable filter delete
+#ifndef MINIFIED
 const string fens[]{
     "r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
     "4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
@@ -869,24 +869,24 @@ void bench() {
     cout << "info time " << elapsedTime << endl;
     cout << totalNodes << " nodes " << nps << " nps" << endl;
 }
-// minify disable filter delete
+#endif
 
 int32_t main(
-    // minify enable filter delete
+#ifndef MINIFIED
     int argc, char *argv[]
-    // minify disable filter delete
+#endif
 ) {
     // initialise zobrist hashes, xor-shift prng
     uint64_t seed = 0x179827108ULL;
     for (auto i = 0; i < 768; i++)
         ZobristPieces[i] = seed ^= (seed ^= (seed ^= seed << 13) >> 7) << 17;
 
-    // minify enable filter delete
+#ifndef MINIFIED
     if (argc > 1 && string{argv[1]} == "bench") {
         bench();
         return 0;
     }
-    // minify disable filter delete
+#endif
 
     Board board{};
     string line;
@@ -908,7 +908,7 @@ int32_t main(
             board = Board{};
             board.state.setHash();
 
-            // minify enable filter delete
+#ifndef MINIFIED
             if (tokens[1] == "fen") {
                 string fen;
 
@@ -934,7 +934,7 @@ int32_t main(
 
                 continue;
             }
-            // minify disable filter delete
+#endif
 
             if (tokens.size() > 2) {
                 // assume that the third token is 'moves'
@@ -955,10 +955,10 @@ int32_t main(
                        stoi(tokens[board.state.flags[0] ? 4 : 2]),
                        stoi(tokens[board.state.flags[0] ? 8 : 6]));
         }
-        // minify enable filter delete
+#ifndef MINIFIED
         else if (tokens[0] == "perft") {
             perft(board, stoi(tokens[1]));
         }
-        // minify disable filter delete
+#endif
     }
 }
