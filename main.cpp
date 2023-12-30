@@ -62,7 +62,7 @@ uint64_t MaskAntiDiagonal[]{
     0x8000000000000000,
 };
 
-int pEval[]{100, 300, 315, 500, 950};
+int PieceValues[]{100, 300, 315, 500, 950};
 
 uint64_t ZobristPieces[768]{};
 
@@ -160,11 +160,11 @@ uint64_t ZobristPieces[768]{};
     return str;
 }
 
-auto _edgedist(auto sq) {
+[[nodiscard]] auto edgeDistance(auto sq) {
     return min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
 }
 
-auto _relr(auto sq, auto c) {
+[[nodiscard]] auto relativeRank(auto sq, auto c) {
     return c == 0 ? (sq / 8) : 7 - (sq / 8);
 }
 
@@ -589,17 +589,17 @@ struct Board {
     // minify disable filter delete
 
     int32_t evaluateColor(auto color) {
-        auto our = state.boards[6 + color];
+        const auto our = state.boards[6 + color];
         auto eval = 0;
         for (auto i = 0; i < 5; i++) {
             auto piece = state.boards[i] & our;
-            eval += __builtin_popcountll(piece) * pEval[i];
+            eval += __builtin_popcountll(piece) * PieceValues[i];
             while (piece) {
-                auto sq = __builtin_ctzll(piece);
+                const auto sq = __builtin_ctzll(piece);
                 piece &= piece - 1;
-                if (i == 0) eval += _relr(sq, color) * _relr(sq, color);
+                if (i == 0) eval += relativeRank(sq, color) * relativeRank(sq, color);
                 if (i > 0) {
-                    eval += _edgedist(sq) * 5;
+                    eval += edgeDistance(sq) * 5;
                 }
             }
         }
