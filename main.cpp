@@ -161,7 +161,7 @@ uint64_t ZobristPieces[768]{};
 }
 
 auto _edgedist(auto sq) {
-    return std::min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
+    return min(((sq % 8 < 4) ? (sq % 8) : (7 - (sq % 8))), ((sq / 8 < 4) ? (sq / 8) : (7 - (sq / 8))));
 }
 
 auto _relr(auto sq, auto c) {
