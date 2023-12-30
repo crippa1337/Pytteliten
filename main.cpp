@@ -598,9 +598,7 @@ struct Board {
                 const auto sq = __builtin_ctzll(piece);
                 piece &= piece - 1;
                 if (i == 0) eval += relativeRank(sq, color) * relativeRank(sq, color);
-                if (i > 0) {
-                    eval += edgeDistance(sq) * 5;
-                }
+                if (i > 0) eval += edgeDistance(sq) * 5;
             }
         }
 
